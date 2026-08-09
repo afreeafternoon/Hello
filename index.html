@@ -34,7 +34,50 @@
     --font-body:'Inter','Noto Sans TC',system-ui,-apple-system,sans-serif;
     --font-mono:'IBM Plex Mono',ui-monospace,monospace;
     --glass-blur:blur(20px);
+
+    /* ===== DS-001 Reading Scale System =====
+       --reading-scale 與 --line-height-base 由 html[data-reading-size] 決定，
+       其餘所有 typography / spacing / component token 都從這兩個變數推算出來。
+       換 Reading Size 只需要換這兩個根源變數，其他 token 自動連動，
+       所以之後新增的頁面/元件只要吃這些 token，就會自動支援 Reading Size，不用額外處理。 */
+    --reading-scale:1;
+    --line-height-base:1.5;
+
+    /* Typography tokens */
+    --text-xs:calc(11px * var(--reading-scale));
+    --text-sm:calc(12.5px * var(--reading-scale));
+    --text-base:calc(14.5px * var(--reading-scale));
+    --text-md:calc(16px * var(--reading-scale));
+    --text-lg:calc(19px * var(--reading-scale));
+    --text-xl:calc(22.5px * var(--reading-scale));
+    --text-2xl:calc(27px * var(--reading-scale));
+
+    /* Spacing tokens */
+    --space-2xs:calc(4px * var(--reading-scale));
+    --space-xs:calc(8px * var(--reading-scale));
+    --space-sm:calc(12px * var(--reading-scale));
+    --space-md:calc(16px * var(--reading-scale));
+    --space-lg:calc(24px * var(--reading-scale));
+    --space-xl:calc(32px * var(--reading-scale));
+
+    /* Component tokens */
+    --card-padding:calc(24px * var(--reading-scale));
+    --card-padding-sm:calc(18px * var(--reading-scale));
+    --component-padding-x:calc(16px * var(--reading-scale));
+    --component-padding-y:calc(10px * var(--reading-scale));
+    --btn-padding-y:calc(12px * var(--reading-scale));
+    --btn-padding-x:calc(22px * var(--reading-scale));
+    --btn-height:calc(46px * var(--reading-scale));
+    --input-height:calc(42px * var(--reading-scale));
+    --input-padding-y:calc(10px * var(--reading-scale));
+    --list-row-height:calc(48px * var(--reading-scale));
+    --list-row-padding-y:calc(15px * var(--reading-scale));
   }
+  /* Reading Size presets：只換這兩個根源變數，--hero-card / .bottom-nav / 版面結構刻意不吃這些 token，維持原比例 */
+  html[data-reading-size="small"]{ --reading-scale:0.9; --line-height-base:1.42; }
+  html[data-reading-size="medium"]{ --reading-scale:1; --line-height-base:1.5; }
+  html[data-reading-size="large"]{ --reading-scale:1.15; --line-height-base:1.6; }
+  html[data-reading-size="xlarge"]{ --reading-scale:1.3; --line-height-base:1.7; }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
@@ -47,7 +90,8 @@
     color:var(--ink);
     font-family:var(--font-body);
     min-height:100vh;
-    line-height:1.5;
+    font-size:var(--text-base);
+    line-height:var(--line-height-base);
   }
   #root{max-width:880px;margin:0 auto;padding:20px 16px 90px;position:relative;}
   .bottom-nav{position:fixed;left:0;right:0;bottom:0;height:62px;background:var(--ink-2);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border-top:1px solid rgba(255,255,255,0.6);display:flex;z-index:45;box-shadow:0 -8px 30px rgba(120,100,180,0.10);}
@@ -123,22 +167,22 @@
   .hamburger-icon span:nth-child(2){top:4.5px;}
   .hamburger-icon span:nth-child(3){top:9px;}
 
-  .card{background:var(--ink-2);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid rgba(255,255,255,0.6);box-shadow:0 8px 30px rgba(120,100,180,0.10);border-radius:var(--radius);padding:24px;margin-bottom:16px;}
+  .card{background:var(--ink-2);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid rgba(255,255,255,0.6);box-shadow:0 8px 30px rgba(120,100,180,0.10);border-radius:var(--radius);padding:var(--card-padding);margin-bottom:var(--space-md);}
   .tier-card{cursor:pointer;transition:transform .15s ease,border-color .15s ease;}
   .tier-card:hover{transform:translateY(-2px);border-color:var(--accent-dim);}
   .tier-row{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;}
   .tier-time{font-family:var(--font-mono);font-size:12.5px;font-weight:700;color:var(--accent-dim);background:var(--accent-soft);padding:6px 13px;border-radius:99px;white-space:nowrap;flex:none;}
   .skip-link{font-size:13px;color:var(--ink-muted);cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;}
   .skip-link:hover{color:var(--accent-dim);}
-  .card-paper{background:var(--paper);color:var(--ink);border-radius:var(--radius);padding:24px;box-shadow:0 8px 30px rgba(120,100,180,0.10);}
+  .card-paper{background:var(--paper);color:var(--ink);border-radius:var(--radius);padding:var(--card-padding);box-shadow:0 8px 30px rgba(120,100,180,0.10);}
 
-  h1{font-family:var(--font-display);font-weight:600;font-size:27px;line-height:1.25;margin:0 0 10px;}
-  h2{font-family:var(--font-display);font-weight:600;font-size:19px;margin:0 0 12px;}
-  p{margin:0 0 12px;color:inherit;}
-  .muted{color:var(--ink-muted);font-size:13.5px;}
+  h1{font-family:var(--font-display);font-weight:600;font-size:var(--text-2xl);line-height:1.25;margin:0 0 var(--space-xs);}
+  h2{font-family:var(--font-display);font-weight:600;font-size:var(--text-lg);margin:0 0 var(--space-sm);}
+  p{margin:0 0 var(--space-sm);color:inherit;}
+  .muted{color:var(--ink-muted);font-size:var(--text-sm);}
   .card-paper .muted{color:var(--paper-muted);}
 
-  .btn{font-family:var(--font-body);font-weight:700;font-size:14.5px;padding:12px 22px;border-radius:14px;border:none;cursor:pointer;transition:transform .1s ease, filter .15s ease, opacity .15s ease;}
+  .btn{font-family:var(--font-body);font-weight:700;font-size:var(--text-base);padding:var(--btn-padding-y) var(--btn-padding-x);min-height:var(--btn-height);border-radius:14px;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:1.2;transition:transform .1s ease, filter .15s ease, opacity .15s ease;}
   .btn:active{transform:scale(0.98);}
   .btn-primary{background:var(--accent);color:#fff;}
   .btn-primary:hover{filter:brightness(1.08);}
@@ -147,8 +191,8 @@
   .btn-paper{background:var(--ink);color:var(--paper);}
   .btn-paper:hover{filter:brightness(1.15);}
   .btn:disabled{opacity:0.4;cursor:not-allowed;}
-  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
-  .btn-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px;}
+  .btn-row{display:flex;gap:var(--space-xs);flex-wrap:wrap;margin-top:var(--space-sm);}
+  .btn-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-xs);margin-top:var(--space-sm);}
   .btn-grid .btn{width:100%;}
   .btn-grid>.btn:last-child:nth-child(odd){grid-column:1/-1;justify-self:center;width:auto;min-width:50%;}
   @media(max-width:360px){ .btn-grid{grid-template-columns:1fr;} .btn-grid>.btn:last-child:nth-child(odd){width:100%;} }
@@ -192,7 +236,7 @@
   .onboard-dot.on{background:var(--accent);}
 
   .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin:16px 0;}
-  .stat-box{background:var(--ink-2);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid rgba(255,255,255,0.6);border-radius:16px;padding:14px 16px;transition:transform .15s ease,border-color .15s ease;}
+  .stat-box{background:var(--ink-2);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid rgba(255,255,255,0.6);border-radius:16px;padding:var(--space-sm) var(--space-md);transition:transform .15s ease,border-color .15s ease;}
   .stat-box.clickable{cursor:pointer;}
   .stat-box.clickable:hover{transform:translateY(-2px);border-color:var(--accent-dim);}
   .stat-box .num{font-family:var(--font-mono);font-size:24px;font-weight:600;color:var(--accent-dim);}
@@ -219,7 +263,7 @@
   .heart-btn:hover{transform:scale(1.15);}
   .heart-btn.active{color:var(--wrong);}
   .due-badge{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--accent-dim);background:var(--accent-soft);padding:5px 10px;border-radius:99px;white-space:nowrap;animation:materialize .3s ease;}
-  .q-text{font-family:var(--font-display);font-size:19px;font-weight:600;line-height:1.5;margin-bottom:18px;}
+  .q-text{font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;line-height:var(--line-height-base);margin-bottom:var(--space-md);}
   .q-text-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:18px;}
   .q-text-row .q-text{margin-bottom:0;flex:1;}
   .icon-btn{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid rgba(51,44,77,0.12);background:var(--paper-2);color:var(--ink);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:border-color .15s ease;}
@@ -228,12 +272,14 @@
   .icon-btn:hover{border-color:var(--accent-dim);}
   .speak-word{cursor:pointer;border-bottom:1.5px dotted currentColor;}
   .speak-word:hover{opacity:0.75;}
+  .tap-word{cursor:pointer;border-bottom:1px dotted transparent;transition:border-color .15s ease;}
+  .tap-word:hover{border-bottom-color:currentColor;}
   .opt-list{display:flex;flex-direction:column;gap:10px;}
-  .opt{display:flex;align-items:center;gap:12px;background:var(--paper-2);border:1.5px solid transparent;border-radius:14px;padding:12px 14px;cursor:pointer;font-size:14.5px;text-align:left;transition:all .12s ease;}
+  .opt{display:flex;align-items:center;gap:var(--space-sm);background:var(--paper-2);border:1.5px solid transparent;border-radius:14px;padding:var(--component-padding-y) var(--space-sm);min-height:var(--list-row-height);cursor:pointer;font-size:var(--text-base);text-align:left;transition:all .12s ease;}
   .opt:hover{border-color:var(--accent-dim);}
   .opt-letter{width:26px;height:26px;flex:none;border-radius:50%;background:var(--ink);color:var(--paper);font-family:var(--font-mono);font-size:12.5px;font-weight:600;display:flex;align-items:center;justify-content:center;}
   .opt-text-col{display:flex;flex-direction:column;gap:1px;}
-  .opt-def{font-size:11.5px;color:var(--ink-muted);}
+  .opt-def{font-size:var(--text-xs);color:var(--ink-muted);}
   .opt.correct{background:var(--accent-soft);border-color:var(--accent);}
   .opt.correct .opt-letter{background:var(--accent);}
   .opt.wrong{background:var(--wrong-soft);border-color:var(--wrong);}
@@ -264,15 +310,15 @@
   .flashcard .fc-def{font-size:15px;margin-top:6px;}
   .flashcard .fc-ex{font-size:13px;color:var(--paper-muted);font-style:italic;margin-top:6px;}
 
-  .list-item{background:var(--ink-2);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid rgba(255,255,255,0.6);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;}
+  .list-item{background:var(--ink-2);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid rgba(255,255,255,0.6);border-radius:14px;padding:var(--space-sm) var(--space-md);margin-bottom:var(--space-xs);cursor:pointer;}
   .list-item:hover{border-color:var(--accent-dim);}
   .list-item-top{display:flex;justify-content:space-between;align-items:center;gap:10px;}
-  .list-item-q{font-size:14px;font-weight:600;}
-  .list-item-meta{font-size:11.5px;color:var(--ink-muted);margin-top:4px;}
+  .list-item-q{font-size:var(--text-base);font-weight:600;}
+  .list-item-meta{font-size:var(--text-xs);color:var(--ink-muted);margin-top:var(--space-2xs);}
   .expand{margin-top:12px;padding-top:12px;border-top:1px dashed var(--ink-3);}
 
   .filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-  .filter-chip{font-size:12.5px;padding:6px 12px;border-radius:99px;background:var(--ink-2);border:1px solid var(--ink-3);color:var(--ink-muted);cursor:pointer;}
+  .filter-chip{font-size:var(--text-sm);padding:var(--space-2xs) var(--space-sm);border-radius:99px;background:var(--ink-2);border:1px solid var(--ink-3);color:var(--ink-muted);cursor:pointer;}
   .filter-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 
   .grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px;}
@@ -318,21 +364,21 @@
   .menu-title{font-family:var(--font-display);font-weight:600;font-size:19.5px;letter-spacing:0.08em;}
   .menu-section{margin-bottom:26px;}
   .menu-section-title{font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-muted);font-weight:700;margin-bottom:12px;}
-  .settings-sub-label{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:10px;}
-  .menu-nav-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:12px;cursor:pointer;font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:4px;}
+  .settings-sub-label{font-size:var(--text-base);font-weight:700;color:var(--ink);margin-bottom:var(--space-xs);}
+  .menu-nav-item{display:flex;align-items:center;gap:var(--space-xs);padding:var(--component-padding-y) var(--space-sm);border-radius:12px;cursor:pointer;font-size:var(--text-base);font-weight:600;color:var(--ink);margin-bottom:var(--space-2xs);}
   .menu-nav-item svg{color:var(--accent-dim);flex:none;}
   .menu-nav-item:hover{background:var(--paper-2);}
   .menu-nav-item.active{background:var(--accent-soft);color:var(--accent-soft-text);}
   .menu-close{width:32px;height:32px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);opacity:0.85;transition:opacity .15s ease,transform .15s ease;filter:drop-shadow(0 0 3px var(--accent-glow-1)) drop-shadow(0 0 7px var(--accent-glow-1));}
   .menu-close:hover{opacity:1;transform:scale(1.1);}
-  .name-input{width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--ink-3);background:var(--paper-2);color:var(--ink);font-family:var(--font-body);font-size:14px;margin-bottom:8px;}
+  .name-input{width:100%;min-height:var(--input-height);padding:var(--input-padding-y) var(--space-sm);border-radius:12px;border:1px solid var(--ink-3);background:var(--paper-2);color:var(--ink);font-family:var(--font-body);font-size:var(--text-base);margin-bottom:var(--space-xs);}
   .color-swatch-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start;margin-bottom:12px;}
   .swatch-item{display:flex;flex-direction:column;align-items:center;gap:4px;}
   .color-swatch{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform .12s ease,box-shadow .12s ease;}
   .color-swatch:hover{transform:scale(1.15);}
   .color-swatch.active{border-color:var(--ink);box-shadow:0 0 0 2px var(--paper);}
   .swatch-hex{font-size:9px;font-family:var(--font-mono);color:var(--ink-muted);letter-spacing:0.02em;}
-  .hex-input{width:100%;padding:9px 12px;border-radius:12px;border:1px solid var(--ink-3);background:var(--paper-2);color:var(--ink);font-family:var(--font-mono);font-size:13.5px;letter-spacing:0.05em;text-transform:uppercase;}
+  .hex-input{width:100%;min-height:var(--input-height);padding:var(--input-padding-y) var(--space-sm);border-radius:12px;border:1px solid var(--ink-3);background:var(--paper-2);color:var(--ink);font-family:var(--font-mono);font-size:var(--text-sm);letter-spacing:0.05em;text-transform:uppercase;}
   .settings-back{font-family:var(--font-display);font-style:italic;font-size:15px;color:var(--accent-dim);font-weight:600;cursor:pointer;margin-bottom:14px;display:inline-block;}
   .settings-back:hover{opacity:0.7;}
   .hex-row{display:flex;gap:8px;align-items:center;}
@@ -368,13 +414,13 @@
 
   /* 個人設定清單（Preferences） */
   .pref-list{padding:4px 20px;}
-  .pref-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 4px;cursor:pointer;border-bottom:1px solid var(--ink-3);transition:background .15s ease;}
+  .pref-row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:var(--list-row-padding-y) var(--space-2xs);min-height:var(--list-row-height);cursor:pointer;border-bottom:1px solid var(--ink-3);transition:background .15s ease;}
   .pref-row:hover{background:var(--accent-soft);}
   .learn-mode-btn{transition:transform .1s ease, filter .15s ease, opacity .15s ease, background-color .15s ease, border-color .15s ease;}
   .learn-mode-btn.btn-ghost:hover{background:var(--accent-soft);border-color:var(--accent-dim);}
   .pref-row:last-child{border-bottom:none;}
   .pref-row.disabled{cursor:default;opacity:0.6;}
-  .pref-row-label{font-size:14.5px;font-weight:600;color:var(--ink);}
+  .pref-row-label{font-size:var(--text-base);font-weight:600;color:var(--ink);}
   .pref-row-right{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-muted);}
   .pref-chevron{color:var(--ink-muted);font-size:14px;}
   .pref-soon-tag{font-size:10.5px;font-weight:700;color:var(--ink-muted);background:var(--paper-2);padding:3px 8px;border-radius:99px;}
@@ -454,6 +500,78 @@ function shuffleOptions(q){
 function escapeHtml(str){
   if(str===undefined||str===null) return '';
   return String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function wrapWordsForLookup(text){
+  if(!text) return '';
+  const tokens=String(text).split(/(\s+)/);
+  return tokens.map(tok=>{
+    if(!tok) return '';
+    if(/^\s+$/.test(tok)) return tok;
+    const leading=(tok.match(/^[^a-zA-Z]*/)||[''])[0];
+    const trailing=(tok.match(/[^a-zA-Z]*$/)||[''])[0];
+    const core=tok.slice(leading.length, tok.length-trailing.length || undefined);
+    if(!core || !/^[a-zA-Z'-]+$/.test(core) || /^_+$/.test(tok)){
+      return escapeHtml(tok);
+    }
+    const wordArg=core.replace(/'/g,"\\'");
+    return `${escapeHtml(leading)}<span class="tap-word" onclick="showWordLookup(event,'${wordArg}')">${escapeHtml(core)}</span>${escapeHtml(trailing)}`;
+  }).join('');
+}
+let wordLookupCache={};
+function closeWordLookup(){
+  if(window.__activeWordPopover){ window.__activeWordPopover.remove(); window.__activeWordPopover=null; }
+  if(window.__activeWordCatcher){ window.__activeWordCatcher.remove(); window.__activeWordCatcher=null; }
+}
+async function showWordLookup(event,word){
+  event.stopPropagation();
+  closeWordLookup();
+  const rect=event.target.getBoundingClientRect();
+  const pop=document.createElement('div');
+  pop.className='glass-popover';
+  pop.style.position='fixed';
+  pop.style.left=Math.max(8,Math.min(rect.left,window.innerWidth-210))+'px';
+  pop.style.top=(rect.bottom+8)+'px';
+  pop.style.minWidth='140px';
+  pop.style.maxWidth='220px';
+  pop.style.padding='12px 14px';
+  pop.style.zIndex='80';
+  function paint(bodyHtml){
+    pop.innerHTML=`<div style="font-weight:700;font-family:var(--font-display);font-size:15px;color:var(--ink);" class="speak-word" onclick="event.stopPropagation();speakText('${word.replace(/'/g,"\\'")}')">${escapeHtml(word)}</div>${bodyHtml}`;
+  }
+  paint(`<div class="muted" style="margin-top:2px;font-size:12.5px;">查詢中…</div>`);
+  document.body.appendChild(pop);
+  window.__activeWordPopover=pop;
+  const catcher=document.createElement('div');
+  catcher.className='popover-catcher';
+  catcher.style.zIndex='79';
+  catcher.onclick=closeWordLookup;
+  document.body.appendChild(catcher);
+  window.__activeWordCatcher=catcher;
+
+  const key=word.toLowerCase();
+  if(wordLookupCache[key]){
+    const r=wordLookupCache[key];
+    paint(`<div class="muted" style="margin-top:4px;font-size:13px;">${escapeHtml(r.partOfSpeech||'')} ${escapeHtml(r.definition||'')}</div>`);
+    return;
+  }
+  try{
+    let result=null;
+    let lastErr=null;
+    for(let attempt=0;attempt<2 && !result;attempt++){
+      try{
+        result=await callClaudeRaw(WORD_LOOKUP_SCHEMA_SYS,`請解釋英文單字："${word}"`);
+        if(!result||typeof result.definition!=='string'||!result.definition){ result=null; throw new Error('回傳格式不完整'); }
+      }catch(err){ lastErr=err; result=null; }
+    }
+    if(!result) throw lastErr||new Error('查詢失敗');
+    wordLookupCache[key]=result;
+    if(window.__activeWordPopover===pop){
+      paint(`<div class="muted" style="margin-top:4px;font-size:13px;">${escapeHtml(result.partOfSpeech||'')} ${escapeHtml(result.definition||'')}</div>`);
+    }
+  }catch(e){
+    console.error('word lookup failed',word,e);
+    if(window.__activeWordPopover===pop){ paint(`<div class="muted" style="margin-top:2px;font-size:12.5px;">查詢失敗，請稍後再試</div>`); }
+  }
 }
 function nowISO(){ return new Date().toISOString(); }
 const BOX_INTERVALS_MIN=[5,25,120,480,1440,4320,10080,21600,43200]; // 5分,25分,2小時,8小時,1天,3天,7天,15天,30天
@@ -565,6 +683,42 @@ function makeQuestionObject(raw,opts){
   };
   return raw;
 }
+
+/* ========================= Score Engine ========================= */
+/* Task 003.1：每題作答後立即更新 Estimated TOEIC Score，而不是像過去那樣，
+   只在整輪練習結束時，用「這輪新題的整體正確率」概算一個粗略的加減分。
+   分數增減依「這題的難度」而不是固定值，難度來自 Question Object 的 metadata。
+   函式刻意拆成三層，是為了讓未來的 Ability Engine（依 Part / Skill / Vocabulary Theme
+   個別追蹤能力值）可以直接接在 recordAbilitySignal() 裡，不需要動到分數計算或呼叫端。 */
+const SCORE_ENGINE_DELTAS={
+  Easy:{correct:2,wrong:-1},
+  Medium:{correct:5,wrong:-3},
+  Hard:{correct:8,wrong:-5},
+  Adaptive:{correct:5,wrong:-3}, // Adaptive 難度目前比照 Medium 計分，待 Ability Engine 上線後可再依個人能力動態調整
+};
+/* 依 Question Object 的 metadata.difficulty 查出這題答對/答錯各該加減多少分 */
+function getScoreDelta(learningObject,correct){
+  const diffLabel=(learningObject&&learningObject.metadata&&learningObject.metadata.difficulty)||'Medium';
+  const table=SCORE_ENGINE_DELTAS[diffLabel]||SCORE_ENGINE_DELTAS.Medium;
+  return correct?table.correct:table.wrong;
+}
+/* 保留給未來 Ability Engine 的介面：屆時會依 learningObject.metadata 裡的
+   part / skills / vocabularyTheme，把這次作答結果累積進對應的能力值。
+   目前先不做任何運算，Task 003.1 的範圍只到 Estimated Score。 */
+function recordAbilitySignal(learningObject,correct){
+  // TODO(Ability Engine): 尚未實作，僅保留介面。
+}
+/* Score Engine 的唯一對外入口：傳入 profile、完整的 Question Object、以及這題答對與否，
+   立即更新 profile.band（並同步 clamp 在 10~990 之間、換算 level），
+   之後再呼叫尚未實作的能力紀錄介面，讓架構已經為未來擴充做好準備。 */
+function applyScoreEngine(profile,questionObject,correct){
+  if(!profile||!questionObject) return;
+  const learningObject=questionObject.learningObject||null;
+  const delta=getScoreDelta(learningObject,correct);
+  profile.band=clamp((profile.band||0)+delta,10,990);
+  profile.level=bandToLevel(profile.band);
+  recordAbilitySignal(learningObject,correct);
+}
 function isReadingOnlyCategory(category){
   return category==='part6' || category==='reading' || !!SCENARIO_LABELS[category];
 }
@@ -653,6 +807,25 @@ function applyAccent(hex){
   root.style.setProperty('--hamburger-color', isDarkAccent?'#FFFFFF':'#4E5366');
   root.style.setProperty('--hamburger-glow', isDarkAccent?`drop-shadow(0 0 4px ${hex}) drop-shadow(0 0 8px ${hex})`:'none');
 }
+const READING_SIZES=[
+  {key:'small',label:'小'},
+  {key:'medium',label:'中'},
+  {key:'large',label:'大'},
+  {key:'xlarge',label:'特大'},
+];
+/* 只需要切換這一個屬性，:root 裡對應的 --reading-scale / --line-height-base 就會跟著換，
+   所有吃 token 的元件（字級、行高、卡片內距、元件內距、按鈕/輸入框/列高）全部自動連動。
+   之後新增頁面或元件，只要使用這些 token 而不是寫死數字，就會自動支援 Reading Size。 */
+function applyReadingSize(size){
+  document.documentElement.setAttribute('data-reading-size', size||'medium');
+}
+async function chooseReadingSize(size){
+  STATE.settings.readingSize=size;
+  applyReadingSize(size);
+  await storageSet('settings',STATE.settings);
+  render();
+}
+
 
 /* ========================= 儲存層 ========================= */
 const HAS_ARTIFACT_STORAGE = typeof window!=='undefined' && !!window.storage && typeof window.storage.get==='function';
@@ -681,12 +854,13 @@ let STATE={
   profile:null,
   mistakes:[],
   vocab:[],
-  settings:{displayName:'學習者',accent:'#8B7FD1',speechRate:1.0,onboardingDone:false},
+  settings:{displayName:'學習者',accent:'#8B7FD1',speechRate:1.0,onboardingDone:false,readingSize:'medium'},
   colorPickerOpen:false,
   pickerHSV:null,
   onboardStep:0,
   sessionGreeting:null,
   profileExpanded:null,
+  sessionOrigin:null,
   learnExpanded:null,
   placement:{questions:[],index:0,correctCount:0,weightedCorrect:0,weightedTotal:0,selected:null},
   session:null,
@@ -706,15 +880,17 @@ async function init(){
   const profile=await storageGet('profile',null);
   const mistakes=await storageGet('mistakes',[]);
   const vocab=await storageGet('vocab',[]);
-  const settings=await storageGet('settings',{displayName:'學習者',accent:'#8B7FD1',speechRate:1.0,onboardingDone:false});
+  const settings=await storageGet('settings',{displayName:'學習者',accent:'#8B7FD1',speechRate:1.0,onboardingDone:false,readingSize:'medium'});
   if(profile && profile.testTaken && typeof settings.onboardingDone==='undefined'){
     settings.onboardingDone=true;
   }
+  if(!settings.readingSize) settings.readingSize='medium';
   STATE.profile=profile;
   STATE.mistakes=mistakes;
   STATE.vocab=vocab;
   STATE.settings=settings;
   applyAccent(settings.accent||'#8B7FD1');
+  applyReadingSize(settings.readingSize);
   STATE.view=profile&&profile.testTaken?'dashboard':'welcome';
   await minDelay;
   const splash=document.getElementById('splash');
@@ -760,6 +936,8 @@ const SPEAKING_PROMPTS_SYS=`你是多益口說練習題目產生器。只能輸�
 
 const SPEAKING_GRADE_SYS=`你是英文口說教練，只輸出合法JSON：{"score":1到5的整數,"feedback":"繁體中文,50字以內,具體指出優點與可改進處"}，不要有其他文字。`;
 
+const WORD_LOOKUP_SCHEMA_SYS=`你是英文單字小助手,只回傳合法JSON:{"partOfSpeech":"詞性縮寫,如n./v./adj./adv.","definition":"5到10字繁體中文意思"}，不要有其他文字。`;
+
 const SCENARIO_SCHEMA_SYS=`你是多益(TOEIC)情境閱讀題目產生器。只能輸出合法 JSON，不能有其他文字。格式：{"questions":[{"id":"字串","difficulty":1到5的整數,"passage":"60字以內的英文短文、對話或公告","question":"針對短文的英文理解題","options":["選項1","選項2","選項3","選項4"],"correctIndex":0到3的整數,"explanation":"15字以內繁體中文解釋","vocabWord":{"word":"關鍵單字","definition":"10字以內繁體中文定義","example":"10字以內例句"}}]}。vocabWord為必填。內容需精簡。`;
 
 const GRAMMAR_SCHEMA_SYS=`你是多益(TOEIC)文法題目產生器，模仿 Part 5 單句填空風格，題目只考文法（時態、詞性、介系詞、子句、比較級等），不考單字語意。只能輸出合法 JSON，不能有其他文字。格式：{"questions":[{"id":"字串","difficulty":1到5的整數,"category":"grammar","question":"英文句子,空格用____表示","options":["選項1","選項2","選項3","選項4"],"correctIndex":0到3的整數,"explanation":"15字以內的繁體中文簡短解釋","grammarTip":"25字以內的繁體中文文法規則說明,說明這類文法點的一般規則"}]}。grammarTip為必填欄位，內容需精簡。`;
@@ -772,7 +950,7 @@ const TALK_SCHEMA_SYS=`你是多益(TOEIC)Part 4簡短獨白聽力題目產生�
 
 const READING_MULTI_SCHEMA_SYS=`你是多益(TOEIC)Part 7閱讀測驗題目產生器,模仿正式格式(廣告、公告、文章、簡訊對話、電子郵件等)。只能輸出合法JSON，不能有其他文字。格式：{"passage":"100到150字的英文文章","questions":[{"question":"英文理解題","options":["選項1","選項2","選項3","選項4"],"correctIndex":0到3的整數,"explanation":"15字以內繁體中文解釋"}]}。questions需剛好2題，皆針對這篇文章提問，彼此不重複。內容需精簡。`;
 
-const PHOTO_SCHEMA_SYS=`你是多益(TOEIC)Part 1照片描述題目產生器。只能輸出合法JSON，不能有其他文字。格式：{"questions":[{"id":"字串","difficulty":1到5的整數,"sceneTag":"5字以內的中文場景標籤,例如:辦公室、機場、餐廳、工地","options":["描述句1","描述句2","描述句3","描述句4"],"correctIndex":0到3的整數,"explanation":"15字以內繁體中文解釋"}]}。options為四句描述該情境畫面的簡短英文句子,以現在進行式為主(例如'A man is typing on a keyboard.'),只有一句最符合場景標籤,其餘三句應描述看似合理但實際上不符合的動作、人數或位置。內容需精簡。`;
+const PHOTO_SCHEMA_SYS=`你是多益(TOEIC)Part 1照片描述題目產生器。只能輸出合法JSON，不能有其他文字。格式：{"questions":[{"id":"字串","difficulty":1到5的整數,"sceneTag":"15到25字的繁體中文場景描述句,需具體到只有一個英文選項會成立(例如:機場報到櫃檯前，乘客正在排隊等候辦理登機手續)","options":["描述句1","描述句2","描述句3","描述句4"],"correctIndex":0到3的整數,"explanation":"15字以內繁體中文解釋"}]}。sceneTag必須清楚描述具體動作、地點與人物,四個英文選項中只有一句能同時符合sceneTag的動作、地點、人數,其餘三句雖然合理但至少有一項細節(動作/地點/人數)對不上,不能讓兩句以上同時成立。內容需精簡。`;
 
 
 /* ---- 備用題庫（API失敗時使用）---- */
@@ -877,9 +1055,9 @@ const FALLBACK_READING_GROUPS=[
   }
 ];
 const FALLBACK_PHOTO=[
-  {id:'p1',difficulty:1,sceneTag:'辦公室',options:["A man is typing on a keyboard.","A man is watering plants.","A man is repairing a printer.","A man is sweeping the floor."],correctIndex:0,explanation:'畫面情境為辦公室打字。'},
-  {id:'p2',difficulty:2,sceneTag:'機場',options:["Passengers are boarding a bus.","Passengers are waiting in line at the counter.","Passengers are eating at a restaurant.","Passengers are sleeping in a lounge."],correctIndex:1,explanation:'機場情境常見排隊等候辦理報到。'},
-  {id:'p3',difficulty:2,sceneTag:'會議室',options:["Colleagues are shaking hands.","A woman is presenting to a group.","Workers are loading boxes onto a truck.","A chef is preparing a meal."],correctIndex:1,explanation:'會議室情境常見簡報畫面。'}
+  {id:'p1',difficulty:1,sceneTag:'辦公室裡，一位男士正坐在電腦前打字',options:["A man is typing on a keyboard.","A man is watering plants.","A man is repairing a printer.","A man is sweeping the floor."],correctIndex:0,explanation:'描述句明確指出動作是打字,其餘三句的動作都對不上。'},
+  {id:'p2',difficulty:2,sceneTag:'機場報到櫃檯前，一群乘客正排隊等候辦理登機手續',options:["Passengers are boarding a bus.","Passengers are waiting in line at the counter.","Passengers are eating at a restaurant.","Passengers are sleeping in a lounge."],correctIndex:1,explanation:'場景明確是「排隊等候辦理登機」,其餘三句的地點或動作都對不上,包含休息區睡覺這種被動狀態也不符合「排隊」這個具體動作。'},
+  {id:'p3',difficulty:2,sceneTag:'會議室裡，一位女士正站在螢幕前向團隊做簡報',options:["Colleagues are shaking hands.","A woman is presenting to a group.","Workers are loading boxes onto a truck.","A chef is preparing a meal."],correctIndex:1,explanation:'描述句明確指出是單一女性在簡報,其餘三句的人物或動作都對不上。'}
 ];
 const FALLBACK_SPEAKING=[
   {id:'s1',mode:'readAloud',text:'Please review the attached document before our meeting.',difficulty:2},
@@ -1293,6 +1471,7 @@ function buildWordCardItems(count){
 }
 
 async function startSession(mode,scenario){
+  STATE.sessionOrigin=STATE.view;
   if((mode==='vocabQuiz'||mode==='wordCard') && STATE.vocab.filter(v=>!v.mastered).length<4){
     STATE.error=null;
     STATE.loading=true; STATE.loadingMsg='正在為你準備入門單字…'; render();
@@ -1403,7 +1582,7 @@ function selectSessionAnswer(idx){
   if(correct) playCorrectSound(); else playWrongSound();
   if(item.kind!=='vocabQuiz'){ speakOptionDelayed(q.options[idx]); }
 
-  if(item.kind==='new'||item.kind==='newListening'){ s.newTotal++; if(correct)s.newCorrect++; }
+  if(item.kind==='new'||item.kind==='newListening'){ s.newTotal++; if(correct)s.newCorrect++; applyScoreEngine(STATE.profile,q,correct); }
   if(item.kind==='mistake'){ s.reviewTotal++; if(correct)s.reviewCorrect++; scheduleSRS(item.ref,correct); s.lastDueInfo=item.ref.due; }
   if(item.kind==='vocabQuiz'||item.kind==='wordCard'){
     s.reviewTotal++; if(correct)s.reviewCorrect++;
@@ -1433,6 +1612,7 @@ function selectSessionAnswer(idx){
 }
 
 async function nextSessionItem(){
+  if(supportsSpeechSynthesis()){ try{ window.speechSynthesis.cancel(); }catch(e){} }
   const s=STATE.session;
   if(s.index<s.queue.length-1){
     s.index++; s.selected=null; s.answered=false; s.lastDueInfo=null;
@@ -1689,13 +1869,6 @@ function cycleSpeechRate(){
 async function finishSession(){
   const s=STATE.session;
   const profile=STATE.profile;
-  if(s.newTotal>0){
-    const acc=s.newCorrect/s.newTotal;
-    let delta=0;
-    if(acc>=0.8) delta=20; else if(acc<=0.4) delta=-20;
-    profile.band=clamp(profile.band+delta,10,990);
-    profile.level=bandToLevel(profile.band);
-  }
   profile.totalAnswered+=s.newTotal+s.reviewTotal;
   profile.totalCorrect+=s.newCorrect+s.reviewCorrect;
   if(s.mode==='speaking'){
@@ -1855,12 +2028,17 @@ function modeForCategory(catKey){
   if(catKey==='vocabulary') return 'vocabQuiz';
   return 'mixed';
 }
+function getLogoTarget(){
+  if(STATE.view==='me') return 'dashboard';
+  if((STATE.view==='session'||STATE.view==='sessionResult') && STATE.sessionOrigin) return STATE.sessionOrigin;
+  return 'dashboard';
+}
 function renderTopbar(){
   const name=STATE.settings.displayName||'學習者';
   const showGreeting=!!STATE.settings.onboardingDone;
   return `
     <div class="topbar">
-      <div class="logo-mark" onclick="goto('dashboard')" title="回到首頁">
+      <div class="logo-mark" onclick="goto(getLogoTarget())" title="回到首頁">
         <svg class="logo-spark-svg" viewBox="0 0 100 100" width="30" height="30">
           <path d="M50 4 C52.5 36 64 47.5 96 50 C64 52.5 52.5 64 50 96 C47.5 64 36 52.5 4 50 C36 47.5 47.5 36 50 4 Z" fill="var(--accent)"/>
         </svg>
@@ -2080,7 +2258,7 @@ function renderWelcome(){
 function renderPlacement(){
   const p=STATE.placement;
   const q=p.questions[p.index];
-  const pct=Math.round((p.index/p.questions.length)*100);
+  const pct=p.questions.length>1?Math.round((p.index/(p.questions.length-1))*100):100;
   return `
     ${renderTopbar()}
     <div class="progress-label">第 ${p.index+1} / ${p.questions.length} 題</div>
@@ -2351,7 +2529,7 @@ function renderMe(){
   const exp=STATE.profileExpanded;
   return `
     ${renderTopbar()}
-    <h1 style="font-size:20px;">Profile</h1>
+    <h1 style="font-size:20px;">Settings</h1>
 
     <div class="card pref-list">
       <div class="pref-row" onmouseenter="hoverExpandProfile('appearance')" onmouseleave="hoverCollapseProfileSoon()" onclick="toggleProfileExpand('appearance')">
@@ -2370,9 +2548,9 @@ function renderMe(){
             <button class="eyedropper-btn ${STATE.colorPickerOpen?'active':''}" onclick="toggleColorPicker()" title="自由調色">${ICON_EYEDROPPER}</button>
           </div>
           ${STATE.colorPickerOpen?renderColorPicker():''}
-          <div class="pref-row disabled" style="padding:10px 2px;">
-            <div class="pref-row-label" style="font-size:13px;">字體大小</div>
-            <span class="pref-soon-tag">即將推出</span>
+          <div class="settings-sub-label" style="margin-top:14px;">字體大小</div>
+          <div class="filter-row" style="margin-bottom:0;">
+            ${READING_SIZES.map(rs=>`<button class="filter-chip ${((STATE.settings.readingSize||'medium')===rs.key)?'active':''}" onclick="chooseReadingSize('${rs.key}')">${rs.label}</button>`).join('')}
           </div>
           <div class="pref-row disabled" style="padding:10px 2px;">
             <div class="pref-row-label" style="font-size:13px;">深色模式</div>
@@ -2539,7 +2717,7 @@ function renderSentenceBlock(text,showAudio){
   const supported=showAudio && supportsSpeechSynthesis();
   const rate=STATE.settings.speechRate||1.0;
   return `<div class="q-text-row">
-    <div class="q-text" id="qtext-main">${escapeHtml(text)}</div>
+    <div class="q-text" id="qtext-main">${wrapWordsForLookup(text)}</div>
     ${supported?`<span style="display:flex;align-items:center;gap:6px;flex:none;">
       <button class="icon-btn" title="播放整句" onclick="speakText(document.getElementById('qtext-main').textContent.replace(/_+/g,' blank '),${rate})">🔊</button>
       <button class="speed-btn" onclick="cycleSpeechRate()" title="調整播放速度">${rate.toFixed(1)}x</button>
@@ -2571,7 +2749,7 @@ function renderPhotoBlock(tag){
 }
 function renderPassageBlock(passage){
   return `<div style="background:var(--paper-2);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
-    <div style="font-size:14.5px;white-space:pre-line;line-height:1.6;">${escapeHtml(passage)}</div>
+    <div style="font-size:14.5px;white-space:pre-line;line-height:1.6;">${wrapWordsForLookup(passage)}</div>
   </div>`;
 }
 function renderPassageBlockDark(passage){
@@ -2686,7 +2864,7 @@ function renderSpeakingResult(s){
 }
 function renderSpeakingItem(p,s){
   const supported=supportsSpeechRecognition();
-  const pct=Math.round((s.index/s.queue.length)*100);
+  const pct=s.queue.length>1?Math.round((s.index/(s.queue.length-1))*100):100;
   return `
     <div class="progress-label">第 ${s.index+1} / ${s.queue.length} 題・口說練習</div>
     <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
@@ -2725,7 +2903,7 @@ function renderSessionJourney(s){
 function renderSession(){
   const s=STATE.session;
   const item=currentSessionItem();
-  const pct=Math.round((s.index/s.queue.length)*100);
+  const pct=s.queue.length>1?Math.round((s.index/(s.queue.length-1))*100):100;
   if(item.kind==='vocabReview'){
     return `${renderTopbar()}
       ${renderSessionJourney(s)}
@@ -2875,6 +3053,7 @@ function renderVocabBook(){
 
 /* ========================= 主渲染函式 ========================= */
 function render(){
+  closeWordLookup();
   const root=document.getElementById('root');
   if(STATE.loading){ root.innerHTML=renderTopbar()+renderLoading(); return; }
   switch(STATE.view){
