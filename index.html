@@ -661,11 +661,51 @@ function scoreRangeFromDifficulty(diffLabel){
 /* makeQuestionObject：把任何一題現有的原始資料(raw)，附加上完整的 Learning Object metadata。
    採用「附加而非取代」的方式(raw.learningObject = {...})，所以既有的渲染邏輯完全不用改，
    同時每一題都具備 AI 之後可以拿來做適性排題、弱點分析、內容平衡分布判斷的完整資訊。 */
+/* Chapter 05：Question Specification 需要的補充 metadata / 結構化欄位。
+   這些刻意用「既有資料推導」而不是另外發 AI 請求，這樣才能立刻套用到全部題型，
+   而不用先把十幾個出題 prompt 都重寫一輪才能上線。之後若要讓 AI 針對每題產生
+   更客製的 learningGoal / grammarFocus，只需要替換這裡的推導邏輯，呼叫端完全不用動。 */
+const LEARNING_GOALS={
+  vocabulary:'熟悉商用情境常見單字的正確用法',
+  grammar:'鞏固該文法點的判斷與應用能力',
+  listening:'訓練聽力關鍵字辨識與答非所問的判斷',
+  conversation:'訓練對話細節理解與跨句推論能力',
+  talk:'訓練獨白主旨掌握與細節理解能力',
+  part6:'訓練上下文銜接與篇章邏輯判斷能力',
+  reading:'訓練閱讀理解與資訊定位能力',
+  photo:'訓練動作與情境描述的精確辨識能力',
+};
+const LEARNING_TIPS={
+  vocabulary:['遇到不熟的單字，先看上下文的動詞或介系詞線索。','背單字時順便記下常見的搭配詞，能幫助你更快辨認語意。'],
+  grammar:['文法題先看空格前後的詞性線索，再判斷正確用法。','固定用法比逐字翻譯更重要，多留意慣用搭配。'],
+  listening:['聽力題先讀懂四個選項的差異，再專心聽關鍵字。','應答題常考「答非所問」的陷阱，留意話題是否偏題。'],
+  conversation:['先掃過幾題的問題，聽的時候就能針對性抓重點。','對話題常考細節，特別留意數字、時間、地點。'],
+  talk:['獨白開頭通常會點出主題，先聽清楚開場句。','公告類獨白常考「接下來要做什麼」，留意祈使句。'],
+  part6:['短文填空要通讀全文再作答，尤其是句子插入題。','留意代名詞與連接詞，能幫助判斷上下文邏輯。'],
+  reading:['先看題目再讀文章，能更快定位答案位置。','留意文章裡的同義詞替換，答案選項常換句話說。'],
+  photo:['描述句常考動作與地點的細節差異，別被相似單字混淆。','現在進行式是照片描述題常見的句型，多熟悉這個結構。'],
+};
+function pickLearningTip(category){
+  const pool=LEARNING_TIPS[category]||LEARNING_TIPS.reading;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function reviewPriorityFromDifficulty(diffLabel){
+  if(diffLabel==='Hard'||diffLabel==='Adaptive') return 'high';
+  if(diffLabel==='Easy') return 'low';
+  return 'medium';
+}
+function adaptiveWeightFromDifficulty(diffLabel){
+  if(diffLabel==='Easy') return 1;
+  if(diffLabel==='Medium') return 1.5;
+  return 2;
+}
 function makeQuestionObject(raw,opts){
   opts=opts||{};
   const partInfo=TOEIC_PARTS[opts.partKey]||{};
   const diffLevel=raw.difficulty||opts.diffLevel||3;
   const diffLabel=difficultyLabelFromLevel(diffLevel);
+  const category=raw.category||opts.category||null;
+  const businessContext=opts.businessContext||pickBusinessContext();
   raw.learningObject={
     part:partInfo.part||opts.part||null,
     section:partInfo.section||null,
@@ -675,9 +715,25 @@ function makeQuestionObject(raw,opts){
       toeicScoreRange:scoreRangeFromDifficulty(diffLabel),
       estimatedTime:partInfo.estimatedTime||'30 sec',
       skills:opts.skills||partInfo.skills||[],
-      businessContext:opts.businessContext||pickBusinessContext(),
+      businessContext,
       vocabularyTheme:opts.vocabularyTheme||(raw.vocabWord?raw.vocabWord.word:null),
+      grammarFocus:raw.grammarTip||null,
+      learningGoal:LEARNING_GOALS[category]||'累積 TOEIC 應試技巧與答題手感',
+      reviewPriority:reviewPriorityFromDifficulty(diffLabel),
+      adaptiveWeight:adaptiveWeightFromDifficulty(diffLabel),
     },
+    /* Explanation 依規格拆成結構化欄位；whyOthersWrong／sentenceAnalysis 目前尚未由 AI
+       個別產生，先留空位，未來要讓 AI 針對每個錯誤選項給解說時，直接填進這裡即可，
+       不需要更動這個物件的形狀，畫面渲染邏輯也不用跟著改。 */
+    explanation:{
+      summary:raw.explanation||'',
+      whyOthersWrong:null,
+      grammar:raw.grammarTip||null,
+      vocabulary:raw.vocabWord||null,
+      sentenceAnalysis:null,
+      businessContext,
+    },
+    learningTip:pickLearningTip(category),
     vocabulary:raw.vocabWord||null,
     grammar:raw.grammarTip||null,
   };
@@ -1341,10 +1397,14 @@ async function generateScenarioQuestions(profile,scenario,count){
 }
 
 /* ---- 單字本自動記錄 ---- */
+function vocabEntryType(word){
+  const trimmed=(word||'').trim();
+  return /\s/.test(trimmed) ? 'phrase' : 'word';
+}
 function autoRecordVocab(vw){
   if(!vw||!vw.word) return false;
   if(STATE.vocab.some(v=>v.word.toLowerCase()===vw.word.toLowerCase())) return false;
-  const v={id:uid(),word:vw.word,definition:vw.definition||'',example:vw.example||'',box:0,due:new Date(Date.now()+5*60000).toISOString(),mastered:false,createdAt:todayStr()};
+  const v={id:uid(),word:vw.word,type:vocabEntryType(vw.word),definition:vw.definition||'',example:vw.example||'',box:0,due:new Date(Date.now()+5*60000).toISOString(),mastered:false,createdAt:todayStr()};
   STATE.vocab.push(v);
   return true;
 }
@@ -1367,7 +1427,7 @@ function selectPlacementAnswer(idx){
   const correct=idx===q.correctIndex;
   if(correct){ STATE.placement.weightedCorrect+=diff; STATE.placement.correctCount++; }
   if(correct) playCorrectSound(); else playWrongSound();
-  speakOptionDelayed(q.options[idx]);
+  speakOptionDelayed(q.options[q.correctIndex]);
   render();
 }
 async function nextPlacementQuestion(){
@@ -1580,7 +1640,7 @@ function selectSessionAnswer(idx){
   const correct=idx===q.correctIndex;
 
   if(correct) playCorrectSound(); else playWrongSound();
-  if(item.kind!=='vocabQuiz'){ speakOptionDelayed(q.options[idx]); }
+  if(item.kind!=='vocabQuiz'){ speakOptionDelayed(q.options[q.correctIndex]); }
 
   if(item.kind==='new'||item.kind==='newListening'){ s.newTotal++; if(correct)s.newCorrect++; applyScoreEngine(STATE.profile,q,correct); }
   if(item.kind==='mistake'){ s.reviewTotal++; if(correct)s.reviewCorrect++; scheduleSRS(item.ref,correct); s.lastDueInfo=item.ref.due; }
@@ -1904,7 +1964,7 @@ async function retestMistake(id,idx){
   m._selected=idx;
   const correct=idx===m.correctIndex;
   if(correct) playCorrectSound(); else playWrongSound();
-  speakOptionDelayed(m.options[idx]);
+  speakOptionDelayed(m.options[m.correctIndex]);
   scheduleSRS(m,correct);
   const clean=STATE.mistakes.map(x=>{const {_selected,...rest}=x; return rest;});
   await storageSet('mistakes',clean);
@@ -2781,6 +2841,10 @@ function renderSessionFeedback(q,s,kind){
       <div class="grammar-tip-label">📘 文法小解說</div>
       <div>${escapeHtml(q.grammarTip)}</div>
     </div>`:''}
+    ${(!correct && q.learningObject && q.learningObject.learningTip)?`<div class="grammar-tip-callout">
+      <div class="grammar-tip-label">💡 學習提示</div>
+      <div>${escapeHtml(q.learningObject.learningTip)}</div>
+    </div>`:''}
     ${(kind!=='vocabQuiz'&&q.vocabWord)?`<div class="vocab-callout">
       <div><div class="word speak-word" data-word="${escapeHtml(q.vocabWord.word)}" onclick="speakText(this.dataset.word)" title="點擊聽發音">${escapeHtml(q.vocabWord.word)}</div><div class="def">${escapeHtml(q.vocabWord.definition)}</div></div>
       <span class="muted" style="font-size:12px;">${justAdded?'✓ 已自動加入個人單字卡':(alreadyInBank?'已在個人單字卡中':'')}</span>
@@ -2828,9 +2892,11 @@ function toggleFavoriteVocab(vocabId){
 }
 function renderVocabReviewItem(v,s){
   const flipped=STATE.flippedCard===v.id;
+  const isPhrase=v.type==='phrase';
   return `
     <div class="flashcard" style="margin-top:16px;" onclick="${flipped?'':`flipVocabCard('${v.id}')`}">
-      <div class="fc-word speak-word" data-word="${escapeHtml(v.word)}" onclick="event.stopPropagation();speakText(this.dataset.word)" title="點擊聽發音">${escapeHtml(v.word)}</div>
+      <span class="badge ${isPhrase?'badge-scenario':'badge-vocab'}" style="margin-bottom:10px;">${isPhrase?'片語':'單字'}</span>
+      <div class="fc-word speak-word" data-word="${escapeHtml(v.word)}" onclick="event.stopPropagation();speakText(this.dataset.word)" title="點擊聽發音" style="${isPhrase?'font-size:19px;line-height:1.4;':''}">${escapeHtml(v.word)}</div>
       ${flipped?`<div class="fc-def">${escapeHtml(v.definition)}</div><div class="fc-ex">${escapeHtml(v.example||'')}</div>`:`<div class="fc-hint">點卡片查看定義</div>`}
     </div>
     ${flipped?`<div class="btn-row" style="justify-content:center;">
@@ -3037,9 +3103,11 @@ function renderVocabBook(){
     ${items.length===0?`<div class="empty">這個分類目前沒有單字，練習中答錯題目就會自動收錄囉。</div>`:
     `<div class="grid-2">${items.map(v=>{
       const flipped=STATE.flippedCard===v.id;
+      const isPhrase=v.type==='phrase';
       return `<div class="flashcard" onclick="flipVocabCard('${v.id}')" style="min-height:140px;position:relative;">
         ${v.favorited?`<span style="position:absolute;top:10px;right:12px;color:var(--wrong);font-size:16px;">♥</span>`:''}
-        <div class="fc-word speak-word" data-word="${escapeHtml(v.word)}" onclick="event.stopPropagation();speakText(this.dataset.word)" title="點擊聽發音">${escapeHtml(v.word)}</div>
+        <span class="badge ${isPhrase?'badge-scenario':'badge-vocab'}" style="margin-bottom:8px;">${isPhrase?'片語':'單字'}</span>
+        <div class="fc-word speak-word" data-word="${escapeHtml(v.word)}" onclick="event.stopPropagation();speakText(this.dataset.word)" title="點擊聽發音" style="${isPhrase?'font-size:17px;line-height:1.4;':''}">${escapeHtml(v.word)}</div>
         ${flipped?`<div class="fc-def">${escapeHtml(v.definition)}</div>${v.example?`<div class="fc-ex">${escapeHtml(v.example)}</div>`:''}
           <div class="btn-row" onclick="event.stopPropagation()">
             <button class="btn btn-ghost" style="padding:7px 12px;font-size:12px;" onclick="gradeVocab('${v.id}',false)">還不熟</button>
