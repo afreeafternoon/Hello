@@ -705,7 +705,7 @@ function makeQuestionObject(raw,opts){
   const diffLevel=raw.difficulty||opts.diffLevel||3;
   const diffLabel=difficultyLabelFromLevel(diffLevel);
   const category=raw.category||opts.category||null;
-  const businessContext=opts.businessContext||pickBusinessContext();
+  const businessContext=raw.businessContext||opts.businessContext||pickBusinessContext();
   raw.learningObject={
     part:partInfo.part||opts.part||null,
     section:partInfo.section||null,
@@ -718,7 +718,8 @@ function makeQuestionObject(raw,opts){
       businessContext,
       vocabularyTheme:opts.vocabularyTheme||(raw.vocabWord?raw.vocabWord.word:null),
       grammarFocus:raw.grammarTip||null,
-      learningGoal:LEARNING_GOALS[category]||'累積 TOEIC 應試技巧與答題手感',
+      learningGoal:raw.learningGoal||opts.learningGoal||LEARNING_GOALS[category]||'累積 TOEIC 應試技巧與答題手感',
+      masterySignals:raw.masterySignals||opts.masterySignals||[],
       reviewPriority:reviewPriorityFromDifficulty(diffLabel),
       adaptiveWeight:adaptiveWeightFromDifficulty(diffLabel),
     },
@@ -932,6 +933,7 @@ let STATE={
 let recognizer=null;
 
 async function init(){
+  console.log(`[Hello] Master Question Library: ${getLibrarySize()} 題（seed set，持續擴充中）`);
   const minDelay=new Promise(res=>setTimeout(res,900));
   const profile=await storageGet('profile',null);
   const mistakes=await storageGet('mistakes',[]);
@@ -1011,51 +1013,78 @@ const PHOTO_SCHEMA_SYS=`你是多益(TOEIC)Part 1照片描述題目產生器。�
 
 /* ---- 備用題庫（API失敗時使用）---- */
 const FALLBACK_QUESTIONS=[
-  {id:'f1',difficulty:1,category:'vocabulary',question:"Please ____ the attached file before the meeting.",options:["review","reviewing","reviewed","reviews"],correctIndex:0,explanation:'祈使句要用動詞原形。',vocabWord:{word:'review',definition:'審閱、檢視',example:'Please review the file.'}},
-  {id:'f2',difficulty:2,category:'grammar',question:"The flight ____ delayed due to weather conditions.",options:["is","are","be","been"],correctIndex:0,explanation:'主詞flight為單數,用is。',vocabWord:{word:'delayed',definition:'延誤的',example:'The flight was delayed.'}},
-  {id:'f3',difficulty:3,category:'vocabulary',question:"The company decided to ____ its operations overseas.",options:["expand","expend","extend","expel"],correctIndex:0,explanation:'expand（擴展）符合語意。',vocabWord:{word:'expand',definition:'擴展、擴張',example:'The firm will expand overseas.'}},
-  {id:'f4',difficulty:2,category:'grammar',question:"She has worked here ____ 2019.",options:["since","for","during","from"],correctIndex:0,explanation:'since接時間點。',vocabWord:{word:'since',definition:'自從',example:'She has worked here since 2019.'}},
-  {id:'f5',difficulty:4,category:'vocabulary',question:"Employees must ____ with the new safety regulations.",options:["comply","complete","compose","compile"],correctIndex:0,explanation:'comply with 意為遵守。',vocabWord:{word:'comply',definition:'遵守',example:'You must comply with the rules.'}},
-  {id:'f6',difficulty:3,category:'grammar',question:"If the shipment arrives late, we ____ the client immediately.",options:["will notify","notified","notifying","had notified"],correctIndex:0,explanation:'條件句主要子句用未來式。',vocabWord:{word:'notify',definition:'通知',example:'We will notify the client.'}},
-  {id:'f7',difficulty:2,category:'vocabulary',question:"The hotel offers a complimentary shuttle ____ the airport.",options:["to","at","for","of"],correctIndex:0,explanation:'shuttle to+地點,表示前往某地的接駁車。',vocabWord:{word:'complimentary',definition:'免費贈送的',example:'Breakfast is complimentary.'}},
-  {id:'f8',difficulty:3,category:'vocabulary',question:"The new policy will ____ effect starting next month.",options:["take","make","do","have"],correctIndex:0,explanation:'take effect為固定用法,意為生效。',vocabWord:{word:'take effect',definition:'生效',example:'The rule takes effect in June.'}},
-  {id:'f9',difficulty:4,category:'grammar',question:"The proposal, ____ was submitted last week, is still under review.",options:["which","who","what","whose"],correctIndex:0,explanation:'關係代名詞which指代前述事物proposal。',vocabWord:{word:'proposal',definition:'提案',example:'We reviewed the proposal.'}},
-  {id:'f10',difficulty:1,category:'vocabulary',question:"Could you ____ me to the nearest subway station?",options:["direct","direction","directly","directed"],correctIndex:0,explanation:'祈使句需用動詞direct(指引)原形。',vocabWord:{word:'direct',definition:'指引、指路',example:'Can you direct me there?'}},
-  {id:'f11',difficulty:3,category:'grammar',question:"By the time the manager arrives, the presentation ____ .",options:["will have ended","ends","ended","is ending"],correctIndex:0,explanation:'未來完成式表示在未來某時間點之前已完成的動作。',vocabWord:{word:'presentation',definition:'簡報',example:'The presentation went well.'}},
-  {id:'f12',difficulty:2,category:'vocabulary',question:"The warranty ____ covers parts and labor for one year.",options:["typically","type","typing","typed"],correctIndex:0,explanation:'typically(通常)是副詞修飾動詞covers。',vocabWord:{word:'warranty',definition:'保固',example:'The product has a one-year warranty.'}},
+  {id:'f1',difficulty:1,category:'vocabulary',question:"Please ____ the attached file before the meeting.",options:["review","reviewing","reviewed","reviews"],correctIndex:0,explanation:'祈使句要用動詞原形。',vocabWord:{word:'review',definition:'審閱、檢視',example:'Please review the file.'},businessContext:'Office',learningGoal:'Recognize imperative sentence structure in workplace instructions',masterySignals:['Identifies imperative sentences without a stated subject','Chooses the base verb form automatically','Avoids adding -ing or -ed to command verbs']},
+  {id:'f2',difficulty:2,category:'grammar',question:"The flight ____ delayed due to weather conditions.",options:["is","are","be","been"],correctIndex:0,explanation:'主詞flight為單數,用is。',vocabWord:{word:'delayed',definition:'延誤的',example:'The flight was delayed.'},businessContext:'Business Travel',learningGoal:'Match singular subjects with the correct be-verb form',masterySignals:['Locates the true subject before choosing the verb','Applies subject-verb agreement without hesitation','Avoids being distracted by nearby plural nouns']},
+  {id:'f3',difficulty:3,category:'vocabulary',question:"The company decided to ____ its operations overseas.",options:["expand","expend","extend","expel"],correctIndex:0,explanation:'expand（擴展）符合語意。',vocabWord:{word:'expand',definition:'擴展、擴張',example:'The firm will expand overseas.'},businessContext:'Business Travel',learningGoal:'Distinguish between commonly confused business verbs',masterySignals:['Separates expand/expend/extend by meaning, not spelling','Avoids common ETS distractors that share a root word','Confirms meaning fits the overseas-growth context']},
+  {id:'f4',difficulty:2,category:'grammar',question:"She has worked here ____ 2019.",options:["since","for","during","from"],correctIndex:0,explanation:'since接時間點。',vocabWord:{word:'since',definition:'自從',example:'She has worked here since 2019.'},businessContext:'HR',learningGoal:'Use prepositions correctly in business emails',masterySignals:['Chooses the correct preposition without hesitation','Recognizes time-related preposition patterns','Avoids common ETS distractors']},
+  {id:'f5',difficulty:4,category:'vocabulary',question:"Employees must ____ with the new safety regulations.",options:["comply","complete","compose","compile"],correctIndex:0,explanation:'comply with 意為遵守。',vocabWord:{word:'comply',definition:'遵守',example:'You must comply with the rules.'},businessContext:'Manufacturing',learningGoal:'Recognize fixed collocations with "with"',masterySignals:['Recalls comply with as a fixed pairing','Distinguishes comply from similar-looking com- verbs','Applies the collocation without translating word-for-word']},
+  {id:'f6',difficulty:3,category:'grammar',question:"If the shipment arrives late, we ____ the client immediately.",options:["will notify","notified","notifying","had notified"],correctIndex:0,explanation:'條件句主要子句用未來式。',vocabWord:{word:'notify',definition:'通知',example:'We will notify the client.'},businessContext:'Logistics',learningGoal:'Apply first conditional structure in business scenarios',masterySignals:['Identifies the if-clause and matches it to future tense','Avoids mixing conditional tenses','Explains why "will + base verb" fits the main clause']},
+  {id:'f7',difficulty:2,category:'vocabulary',question:"The hotel offers a complimentary shuttle ____ the airport.",options:["to","at","for","of"],correctIndex:0,explanation:'shuttle to+地點,表示前往某地的接駁車。',vocabWord:{word:'complimentary',definition:'免費贈送的',example:'Breakfast is complimentary.'},businessContext:'Hotel',learningGoal:'Use direction prepositions with transportation vocabulary',masterySignals:['Recognizes shuttle to as a fixed direction pattern','Does not confuse complimentary with complementary','Applies the preposition consistently across similar sentences']},
+  {id:'f8',difficulty:3,category:'vocabulary',question:"The new policy will ____ effect starting next month.",options:["take","make","do","have"],correctIndex:0,explanation:'take effect為固定用法,意為生效。',vocabWord:{word:'take effect',definition:'生效',example:'The rule takes effect in June.'},businessContext:'HR',learningGoal:'Recognize fixed verb-noun collocations',masterySignals:['Recalls "take effect" as an inseparable phrase','Avoids substituting synonyms for fixed collocations','Applies the phrase correctly with future time markers']},
+  {id:'f9',difficulty:4,category:'grammar',question:"The proposal, ____ was submitted last week, is still under review.",options:["which","who","what","whose"],correctIndex:0,explanation:'關係代名詞which指代前述事物proposal。',vocabWord:{word:'proposal',definition:'提案',example:'We reviewed the proposal.'},businessContext:'Finance',learningGoal:'Choose the correct relative pronoun for non-human antecedents',masterySignals:['Identifies the antecedent as a thing, not a person','Selects which over who/whose accordingly','Recognizes non-restrictive clauses set off by commas']},
+  {id:'f10',difficulty:1,category:'vocabulary',question:"Could you ____ me to the nearest subway station?",options:["direct","direction","directly","directed"],correctIndex:0,explanation:'祈使句需用動詞direct(指引)原形。',vocabWord:{word:'direct',definition:'指引、指路',example:'Can you direct me there?'},businessContext:'Shopping',learningGoal:'Distinguish word forms (verb vs. noun vs. adverb) in context',masterySignals:['Identifies the missing slot as a verb position','Avoids choosing the noun or adverb form by mistake','Confirms meaning fits a polite request structure']},
+  {id:'f11',difficulty:3,category:'grammar',question:"By the time the manager arrives, the presentation ____ .",options:["will have ended","ends","ended","is ending"],correctIndex:0,explanation:'未來完成式表示在未來某時間點之前已完成的動作。',vocabWord:{word:'presentation',definition:'簡報',example:'The presentation went well.'},businessContext:'Presentation',learningGoal:'Apply future perfect tense with "by the time" clauses',masterySignals:['Recognizes "by the time" as a future-perfect trigger','Sequences two future events correctly','Avoids defaulting to simple future tense']},
+  {id:'f12',difficulty:2,category:'vocabulary',question:"The warranty ____ covers parts and labor for one year.",options:["typically","type","typing","typed"],correctIndex:0,explanation:'typically(通常)是副詞修飾動詞covers。',vocabWord:{word:'warranty',definition:'保固',example:'The product has a one-year warranty.'},businessContext:'Customer Service',learningGoal:'Identify adverbs modifying verbs in business descriptions',masterySignals:['Locates the verb being modified before choosing a form','Selects the -ly adverb form for verb modification','Avoids confusing "typically" with related noun/verb forms']},
+  {id:'f13',difficulty:3,category:'vocabulary',question:"The sales team exceeded its quarterly ____ by fifteen percent.",options:["quota","quote","query","queue"],correctIndex:0,explanation:'quota指業績配額。',vocabWord:{word:'quota',definition:'配額、業績目標',example:'They exceeded their sales quota.'},businessContext:'Sales',learningGoal:'Recognize business performance vocabulary',masterySignals:['Distinguishes quota from similar-sounding words','Confirms meaning fits a sales-performance context','Avoids choosing distractors that merely sound similar']},
+  {id:'f14',difficulty:3,category:'vocabulary',question:"Please ____ three quotes before selecting a vendor.",options:["obtain","attain","retain","contain"],correctIndex:0,explanation:'obtain意為取得。',vocabWord:{word:'obtain',definition:'取得、獲得',example:'Please obtain three quotes.'},businessContext:'Purchasing',learningGoal:'Distinguish commonly confused -tain verbs',masterySignals:['Separates obtain/attain/retain/contain by meaning','Confirms meaning fits a procurement context','Avoids common ETS distractors sharing a root']},
 ];
 const FALLBACK_LISTENING=[
-  {id:'l1',difficulty:1,audioScript:"When does the meeting start?",options:["At 10 AM.","I'm fine, thanks.","It's on the third floor."],correctIndex:0,explanation:'回答時間的問題要直接說時間。',vocabWord:{word:'meeting',definition:'會議',example:'The meeting starts at 10.'}},
-  {id:'l2',difficulty:2,audioScript:"Could you send me the report by Friday?",options:["Sure, I will.","It's raining outside.","I bought a new laptop."],correctIndex:0,explanation:'請求類問題應以同意或拒絕回應。',vocabWord:{word:'report',definition:'報告',example:'Please send the report.'}},
-  {id:'l3',difficulty:3,audioScript:"Who's in charge of the marketing campaign?",options:["Sarah is.","At the office.","Next Monday."],correctIndex:0,explanation:'Who的問題要回答人。',vocabWord:{word:'in charge of',definition:'負責',example:'She is in charge of it.'}},
-  {id:'l4',difficulty:3,audioScript:"Why was the shipment delayed?",options:["Because of bad weather.","Yes, it was.","On the second floor."],correctIndex:0,explanation:'Why的問題要回答原因。',vocabWord:{word:'shipment',definition:'貨運、貨物',example:'The shipment was late.'}},
-  {id:'l5',difficulty:1,audioScript:"Where is the nearest printer?",options:["Down the hall.","At 3 o'clock.","It's blue."],correctIndex:0,explanation:'Where的問題要回答地點。',vocabWord:{word:'nearest',definition:'最近的',example:'Where is the nearest exit?'}},
-  {id:'l6',difficulty:2,audioScript:"How much does the annual subscription cost?",options:["About two hundred dollars.","Every Monday.","In the storage room."],correctIndex:0,explanation:'How much的問題要回答金額。',vocabWord:{word:'subscription',definition:'訂閱',example:'I renewed my subscription.'}},
-  {id:'l7',difficulty:3,audioScript:"Would you like me to reschedule the appointment?",options:["Yes, that would help.","It's on the fifth floor.","I have three."],correctIndex:0,explanation:'提議類問題可用同意的回應。',vocabWord:{word:'appointment',definition:'約診、預約',example:'I have an appointment at noon.'}},
-  {id:'l8',difficulty:2,audioScript:"Isn't the client visiting us tomorrow?",options:["Yes, at 2 PM.","No, I haven't.","It's very large."],correctIndex:0,explanation:'附加問句用yes/no加細節回答。',vocabWord:{word:'client',definition:'客戶',example:'The client is visiting tomorrow.'}},
+  {id:'l1',difficulty:1,audioScript:"When does the meeting start?",options:["At 10 AM.","I'm fine, thanks.","It's on the third floor."],correctIndex:0,explanation:'回答時間的問題要直接說時間。',vocabWord:{word:'meeting',definition:'會議',example:'The meeting starts at 10.'},businessContext:'Meeting',learningGoal:'Match WH-question types to the correct answer category',masterySignals:['Recognizes "When" requires a time-based answer','Rejects answers that address the wrong question type','Responds without needing to hear the full question repeated']},
+  {id:'l2',difficulty:2,audioScript:"Could you send me the report by Friday?",options:["Sure, I will.","It's raining outside.","I bought a new laptop."],correctIndex:0,explanation:'請求類問題應以同意或拒絕回應。',vocabWord:{word:'report',definition:'報告',example:'Please send the report.'},businessContext:'Email',learningGoal:'Respond appropriately to polite requests',masterySignals:['Identifies "Could you...?" as a request, not a genuine question about ability','Chooses an agree/decline-style response','Avoids unrelated statement answers']},
+  {id:'l3',difficulty:3,audioScript:"Who's in charge of the marketing campaign?",options:["Sarah is.","At the office.","Next Monday."],correctIndex:0,explanation:'Who的問題要回答人。',vocabWord:{word:'in charge of',definition:'負責',example:'She is in charge of it.'},businessContext:'Marketing',learningGoal:'Match WH-question types to the correct answer category',masterySignals:['Recognizes "Who" requires a person-based answer','Avoids being distracted by plausible but off-target answers','Answers confidently without hesitation']},
+  {id:'l4',difficulty:3,audioScript:"Why was the shipment delayed?",options:["Because of bad weather.","Yes, it was.","On the second floor."],correctIndex:0,explanation:'Why的問題要回答原因。',vocabWord:{word:'shipment',definition:'貨運、貨物',example:'The shipment was late.'},businessContext:'Shipping',learningGoal:'Match WH-question types to the correct answer category',masterySignals:['Recognizes "Why" requires a reason-based answer','Rejects yes/no answers to WH-questions','Distinguishes reason answers from location answers']},
+  {id:'l5',difficulty:1,audioScript:"Where is the nearest printer?",options:["Down the hall.","At 3 o'clock.","It's blue."],correctIndex:0,explanation:'Where的問題要回答地點。',vocabWord:{word:'nearest',definition:'最近的',example:'Where is the nearest exit?'},businessContext:'Office',learningGoal:'Match WH-question types to the correct answer category',masterySignals:['Recognizes "Where" requires a location-based answer','Avoids confusing location answers with time answers','Responds without hesitation']},
+  {id:'l6',difficulty:2,audioScript:"How much does the annual subscription cost?",options:["About two hundred dollars.","Every Monday.","In the storage room."],correctIndex:0,explanation:'How much的問題要回答金額。',vocabWord:{word:'subscription',definition:'訂閱',example:'I renewed my subscription.'},businessContext:'Finance',learningGoal:'Match WH-question types to the correct answer category',masterySignals:['Recognizes "How much" requires a price or quantity','Avoids confusing price answers with frequency answers','Identifies numeric-style responses quickly']},
+  {id:'l7',difficulty:3,audioScript:"Would you like me to reschedule the appointment?",options:["Yes, that would help.","It's on the fifth floor.","I have three."],correctIndex:0,explanation:'提議類問題可用同意的回應。',vocabWord:{word:'appointment',definition:'約診、預約',example:'I have an appointment at noon.'},businessContext:'Office',learningGoal:'Respond appropriately to offers and suggestions',masterySignals:['Identifies "Would you like...?" as an offer','Chooses an accept/decline-style response','Avoids unrelated factual answers']},
+  {id:'l8',difficulty:2,audioScript:"Isn't the client visiting us tomorrow?",options:["Yes, at 2 PM.","No, I haven't.","It's very large."],correctIndex:0,explanation:'附加問句用yes/no加細節回答。',vocabWord:{word:'client',definition:'客戶',example:'The client is visiting tomorrow.'},businessContext:'Customer Service',learningGoal:'Answer negative and tag questions correctly',masterySignals:['Recognizes negative questions still expect a normal yes/no logic','Follows up yes/no with a relevant detail','Avoids mismatched yes/no and detail combinations']},
+  {id:'l9',difficulty:2,audioScript:"Do you have a reservation for tonight?",options:["Yes, under Johnson.","It's next to the bank.","I'll take the salad."],correctIndex:0,explanation:'回答預約要提供訂位資訊。',vocabWord:{word:'reservation',definition:'預約',example:'I have a reservation for two.'},businessContext:'Restaurant',learningGoal:'Respond appropriately to yes/no confirmation questions',masterySignals:['Recognizes yes/no questions require a direct answer first','Follows up with a specific confirming detail','Avoids unrelated menu-related answers']},
+  {id:'l10',difficulty:1,audioScript:"When was your last checkup?",options:["About six months ago.","At the front desk.","Yes, I did."],correctIndex:0,explanation:'When的問題要回答時間。',vocabWord:{word:'checkup',definition:'健康檢查',example:'I had a checkup last week.'},businessContext:'Healthcare',learningGoal:'Match WH-question types to the correct answer category',masterySignals:['Recognizes "When" requires a time-based answer','Rejects yes/no answers to WH-questions','Responds without hesitation']},
+  {id:'l11',difficulty:2,audioScript:"Could I leave a message for Mr. Chen?",options:["Sure, go ahead.","It's on the second floor.","I bought two tickets."],correctIndex:0,explanation:'請求類問題應以同意或拒絕回應。',vocabWord:{word:'leave a message',definition:'留言',example:'Could I leave a message?'},businessContext:'Telephone',learningGoal:'Respond appropriately to polite requests',masterySignals:['Identifies "Could I...?" as a request for permission','Chooses an agree/decline-style response','Avoids unrelated statement answers']},
 ];
 const FALLBACK_GRAMMAR=[
-  {id:'g1',difficulty:2,category:'grammar',question:"The flight ____ delayed due to weather conditions.",options:["is","are","be","been"],correctIndex:0,explanation:'主詞flight為單數,用is。',grammarTip:'單數主詞須搭配單數動詞(be動詞用is)。'},
-  {id:'g2',difficulty:2,category:'grammar',question:"She has worked here ____ 2019.",options:["since","for","during","from"],correctIndex:0,explanation:'since接時間點。',grammarTip:'since接明確時間點,for接一段時間長度。'},
-  {id:'g3',difficulty:3,category:'grammar',question:"If the shipment arrives late, we ____ the client immediately.",options:["will notify","notified","notifying","had notified"],correctIndex:0,explanation:'條件句主要子句用未來式。',grammarTip:'第一類條件句：if子句用現在式,主要子句用未來式(will+原形)。'},
-  {id:'g4',difficulty:3,category:'grammar',question:"The report ____ by the manager before it is sent out.",options:["must be reviewed","must review","must reviewing","must reviews"],correctIndex:0,explanation:'report是被審閱,需用被動語態。',grammarTip:'被動語態：be動詞+過去分詞,情態動詞後接原形be。'},
-  {id:'g5',difficulty:2,category:'grammar',question:"This laptop is ____ than the one I bought last year.",options:["faster","fast","more fast","fastest"],correctIndex:0,explanation:'比較兩者用比較級。',grammarTip:'單音節形容詞比較級字尾加-er,搭配than使用。'},
-  {id:'g6',difficulty:4,category:'grammar',question:"____ the heavy rain, the outdoor event proceeded as planned.",options:["Despite","Although","Because","Unless"],correctIndex:0,explanation:'despite後接名詞片語。',grammarTip:'despite/in spite of後接名詞或動名詞,although後接完整子句。'},
-  {id:'g7',difficulty:3,category:'grammar',question:"Neither the manager nor the assistants ____ available today.",options:["are","is","be","been"],correctIndex:0,explanation:'neither...nor,動詞與最近的主詞(assistants)一致。',grammarTip:'neither A nor B句型,動詞需與B(較近的主詞)一致。'},
-  {id:'g8',difficulty:4,category:'grammar',question:"Had we known about the delay, we ____ the shipment earlier.",options:["would have sent","would send","send","had sent"],correctIndex:0,explanation:'與過去事實相反的假設語氣,主要子句用would have+過去分詞。',grammarTip:'第三類條件句(與過去相反):If S had p.p., S would have p.p.。'},
+  {id:'g1',difficulty:2,category:'grammar',question:"The flight ____ delayed due to weather conditions.",options:["is","are","be","been"],correctIndex:0,explanation:'主詞flight為單數,用is。',grammarTip:'單數主詞須搭配單數動詞(be動詞用is)。',businessContext:'Business Travel',learningGoal:'Match singular subjects with the correct be-verb form',masterySignals:['Locates the true subject before choosing the verb','Applies subject-verb agreement without hesitation','Avoids being distracted by nearby plural nouns']},
+  {id:'g2',difficulty:2,category:'grammar',question:"She has worked here ____ 2019.",options:["since","for","during","from"],correctIndex:0,explanation:'since接時間點。',grammarTip:'since接明確時間點,for接一段時間長度。',businessContext:'HR',learningGoal:'Use prepositions correctly in business emails',masterySignals:['Chooses the correct preposition without hesitation','Recognizes time-related preposition patterns','Avoids common ETS distractors']},
+  {id:'g3',difficulty:3,category:'grammar',question:"If the shipment arrives late, we ____ the client immediately.",options:["will notify","notified","notifying","had notified"],correctIndex:0,explanation:'條件句主要子句用未來式。',grammarTip:'第一類條件句：if子句用現在式,主要子句用未來式(will+原形)。',businessContext:'Logistics',learningGoal:'Apply first conditional structure in business scenarios',masterySignals:['Identifies the if-clause and matches it to future tense','Avoids mixing conditional tenses','Explains why "will + base verb" fits the main clause']},
+  {id:'g4',difficulty:3,category:'grammar',question:"The report ____ by the manager before it is sent out.",options:["must be reviewed","must review","must reviewing","must reviews"],correctIndex:0,explanation:'report是被審閱,需用被動語態。',grammarTip:'被動語態：be動詞+過去分詞,情態動詞後接原形be。',businessContext:'Office',learningGoal:'Apply passive voice with modal verbs',masterySignals:['Identifies when the subject receives the action','Forms modal + be + past participle correctly','Avoids active-voice answers when passive is required']},
+  {id:'g5',difficulty:2,category:'grammar',question:"This laptop is ____ than the one I bought last year.",options:["faster","fast","more fast","fastest"],correctIndex:0,explanation:'比較兩者用比較級。',grammarTip:'單音節形容詞比較級字尾加-er,搭配than使用。',businessContext:'Technology',learningGoal:'Form comparative adjectives correctly',masterySignals:['Recognizes "than" as a comparative signal','Applies -er ending to short adjectives','Avoids double comparatives like "more fast"']},
+  {id:'g6',difficulty:4,category:'grammar',question:"____ the heavy rain, the outdoor event proceeded as planned.",options:["Despite","Although","Because","Unless"],correctIndex:0,explanation:'despite後接名詞片語。',grammarTip:'despite/in spite of後接名詞或動名詞,although後接完整子句。',businessContext:'Conference',learningGoal:'Distinguish prepositions from conjunctions in contrast structures',masterySignals:['Checks whether a noun phrase or full clause follows the blank','Separates despite from although by grammar, not meaning','Applies the correct connector consistently']},
+  {id:'g7',difficulty:3,category:'grammar',question:"Neither the manager nor the assistants ____ available today.",options:["are","is","be","been"],correctIndex:0,explanation:'neither...nor,動詞與最近的主詞(assistants)一致。',grammarTip:'neither A nor B句型,動詞需與B(較近的主詞)一致。',businessContext:'Office',learningGoal:'Apply proximity agreement in neither...nor structures',masterySignals:['Identifies the closer noun as the agreement anchor','Applies proximity agreement instead of first-noun agreement','Recognizes neither...nor as a paired conjunction']},
+  {id:'g8',difficulty:4,category:'grammar',question:"Had we known about the delay, we ____ the shipment earlier.",options:["would have sent","would send","send","had sent"],correctIndex:0,explanation:'與過去事實相反的假設語氣,主要子句用would have+過去分詞。',grammarTip:'第三類條件句(與過去相反):If S had p.p., S would have p.p.。',businessContext:'Logistics',learningGoal:'Apply third conditional structure for past hypotheticals',masterySignals:['Recognizes inverted "Had we known" as a conditional clause','Matches it to would have + past participle','Avoids mixing second and third conditional forms']},
+  {id:'g9',difficulty:2,category:'grammar',question:"The bank ____ interest rates every quarter.",options:["reviews","review","reviewing","reviewed"],correctIndex:0,explanation:'描述例行公事用現在簡單式,第三人稱單數動詞加-s。',grammarTip:'例行性、反覆發生的動作用現在簡單式,主詞是第三人稱單數時動詞要加-s。',businessContext:'Banking',learningGoal:'Use simple present tense for routine business processes',masterySignals:['Recognizes recurring actions require simple present','Applies third-person singular -s ending correctly','Avoids confusing routine actions with one-time past events']},
+  {id:'g10',difficulty:4,category:'grammar',question:"The candidate ____ resume impressed the panel was offered the position.",options:["whose","who","which","whom"],correctIndex:0,explanation:'所有格關係代名詞whose修飾resume,指出候選人的履歷。',grammarTip:'whose用來表示所屬關係,後面直接接名詞。',businessContext:'Recruitment',learningGoal:'Choose the correct relative pronoun to show possession',masterySignals:['Recognizes whose introduces a possessive relationship','Distinguishes whose from who/which by function, not just meaning','Confirms the clause modifies the correct antecedent']},
+  {id:'g11',difficulty:3,category:'grammar',question:"The insurance company recommends ____ your policy annually.",options:["reviewing","review","to review","reviewed"],correctIndex:0,explanation:'recommend後接動名詞(V-ing)。',grammarTip:'recommend、suggest、avoid等動詞後面固定接動名詞,不能接不定詞。',businessContext:'Insurance',learningGoal:'Use gerunds correctly after specific verbs',masterySignals:['Recalls recommend + V-ing as a fixed pattern','Distinguishes gerund-taking verbs from infinitive-taking verbs','Avoids inserting "to" before the gerund']},
+  {id:'g12',difficulty:5,category:'grammar',question:"Patients ____ complete the intake form before seeing the doctor.",options:["must","might","would","could"],correctIndex:0,explanation:'must表示強制性規定。',grammarTip:'must/have to表示義務或規定,語氣比should更強、更具強制性。',businessContext:'Healthcare',learningGoal:'Distinguish degrees of obligation among modal verbs',masterySignals:['Distinguishes must (obligation) from should (recommendation)','Recognizes regulatory/procedural contexts require must','Avoids weaker modals when a strict requirement is implied']},
+  {id:'g13',difficulty:4,category:'grammar',question:"This is the department ____ all invoices are processed.",options:["where","which","who","whose"],correctIndex:0,explanation:'關係副詞where修飾地點department。',grammarTip:'關係副詞where/when/why用來修飾地點/時間/原因名詞,後面接完整句子。',businessContext:'Finance',learningGoal:'Choose the correct relative adverb for place, time, or reason',masterySignals:['Recognizes where introduces a place-related clause','Distinguishes relative adverbs from relative pronouns','Confirms a complete clause, not just a noun, follows the blank']},
+  {id:'g14',difficulty:4,category:'grammar',question:"____ the quarterly results, the CFO decided to cut costs.",options:["Reviewing","Reviewed","Review","To review"],correctIndex:0,explanation:'現在分詞Reviewing表示主動,主詞CFO是動作執行者。',grammarTip:'分詞構句：主詞執行動作用現在分詞(V-ing),主詞承受動作用過去分詞(p.p.)。',businessContext:'Finance',learningGoal:'Use participle phrases to combine related actions',masterySignals:['Determines whether the subject performs or receives the action','Applies -ing for active participles correctly','Avoids confusing participle phrases with full clauses']},
+  {id:'g15',difficulty:2,category:'grammar',question:"The company hired ____ additional staff to handle the increased workload.",options:["several","much","little","less"],correctIndex:0,explanation:'staff為可數複數概念,用several修飾。',grammarTip:'可數名詞用several/many/few修飾,不可數名詞用much/little修飾。',businessContext:'HR',learningGoal:'Match quantifiers to countable and uncountable nouns',masterySignals:['Determines whether the noun is countable or uncountable','Matches the correct quantifier accordingly','Avoids common count/uncount quantifier mismatches']},
+  {id:'g16',difficulty:5,category:'grammar',question:"Not only ____ the deadline, but she also exceeded expectations.",options:["did she meet","she did meet","she met","met she"],correctIndex:0,explanation:'Not only置於句首引導倒裝,助動詞did提前。',grammarTip:'Not only放句首時,句子需要倒裝,助動詞或be動詞要提到主詞前面。',businessContext:'Office',learningGoal:'Apply subject-verb inversion after negative adverbials',masterySignals:['Recognizes "Not only" at the start triggers inversion','Places the auxiliary verb before the subject correctly','Avoids normal word order after negative openers']},
+  {id:'g17',difficulty:3,category:'grammar',question:"The manager is responsible for hiring, training, and ____ new employees.",options:["evaluating","evaluate","to evaluate","evaluation"],correctIndex:0,explanation:'對等連接需與hiring, training同形式,用動名詞。',grammarTip:'對等結構(...,..., and...)裡的每個項目文法形式要一致。',businessContext:'HR',learningGoal:'Maintain parallel structure in lists of business duties',masterySignals:['Identifies the grammatical form used by earlier list items','Matches the final item to the same form','Avoids mixing gerunds with infinitives or nouns in one list']},
+  {id:'g18',difficulty:4,category:'grammar',question:"The client said that the shipment ____ by Friday.",options:["would arrive","will arrive","arrives","arrived"],correctIndex:0,explanation:'間接引述主要子句是過去式,子句時態要往前推(will→would)。',grammarTip:'間接引述時,若主要子句是過去式,從句時態通常也要往前推一格(will→would、is→was等)。',businessContext:'Shipping',learningGoal:'Apply tense backshift in reported speech',masterySignals:['Recognizes "said that" as a reported-speech trigger','Shifts future tense (will) to would in the reported clause','Avoids keeping direct-speech tense in indirect quotations']},
+  {id:'g19',difficulty:3,category:'grammar',question:"Customers ____ accounts have been inactive for over a year will receive a notification.",options:["whose","who","which","whom"],correctIndex:0,explanation:'所有格關係代名詞whose修飾accounts,指帳戶所有人。',grammarTip:'whose表示所屬關係,用來連接人與其所屬物品,後面直接接名詞。',businessContext:'Banking',learningGoal:'Choose the correct relative pronoun to link a person to their possession',masterySignals:['Recognizes whose introduces a possessive relationship','Confirms the antecedent is a person, not a thing','Distinguishes whose from who/which by grammatical function']},
+  {id:'g20',difficulty:3,category:'grammar',question:"The loan officer ____ approved my application transferred to another branch.",options:["who","whom","which","whose"],correctIndex:0,explanation:'主格關係代名詞who代替主詞the loan officer。',grammarTip:'關係代名詞在子句中做主詞時用who(指人)或which(指物),不能用受格whom。',businessContext:'Banking',learningGoal:'Choose the correct relative pronoun in subject position',masterySignals:['Identifies whether the relative pronoun acts as subject or object','Selects who for a human subject','Avoids using the object form whom in subject position']},
+  {id:'g21',difficulty:3,category:'grammar',question:"We are looking for a candidate ____ experience matches our job requirements.",options:["whose","who","which","whom"],correctIndex:0,explanation:'whose修飾experience,表示候選人的經驗。',grammarTip:'whose可修飾人或物的所屬名詞,重點在於後面接的名詞屬於前面提到的人或物。',businessContext:'Recruitment',learningGoal:'Choose the correct relative pronoun to show possession',masterySignals:['Recognizes whose can modify both people and things','Confirms the following noun belongs to the antecedent','Avoids confusing whose with who when a noun immediately follows']},
+  {id:'g22',difficulty:4,category:'grammar',question:"The position, ____ was posted last week, has already received fifty applications.",options:["which","who","whom","whose"],correctIndex:0,explanation:'關係代名詞which指代前述事物position。',grammarTip:'非限定用法(逗號隔開)的關係子句,指物用which,指人用who,並補充額外資訊。',businessContext:'Recruitment',learningGoal:'Recognize non-restrictive relative clauses that add extra information',masterySignals:['Identifies commas as a signal for non-restrictive clauses','Selects which for a non-human antecedent','Distinguishes essential from non-essential clause information']},
+  {id:'g23',difficulty:2,category:'grammar',question:"According to the new policy, customers ____ present a valid ID to open an account.",options:["must","might","would","could"],correctIndex:0,explanation:'must表示強制性規定。',grammarTip:'must/have to用於表達規定或強制要求,語氣比should強烈。',businessContext:'Banking',learningGoal:'Distinguish degrees of obligation among modal verbs',masterySignals:['Recognizes regulatory language requires must','Distinguishes obligation from possibility or suggestion','Avoids weaker modals in policy-driven contexts']},
+  {id:'g24',difficulty:3,category:'grammar',question:"Interest rates ____ increase again next quarter, according to analysts.",options:["may","must","should","need"],correctIndex:0,explanation:'may表示可能性,符合分析師預測的不確定語氣。',grammarTip:'may/might用來表達可能性,語氣比will更保守、不確定。',businessContext:'Banking',learningGoal:'Use modal verbs to express degrees of certainty in forecasts',masterySignals:['Distinguishes possibility (may) from certainty (will)','Recognizes forecast language calls for a tentative modal','Avoids overstating certainty with strong modals like must']},
+  {id:'g25',difficulty:3,category:'grammar',question:"Applicants ____ submit their resumes online; paper applications are no longer accepted.",options:["must","may","could","might"],correctIndex:0,explanation:'must表示強制性規定,paper applications no longer accepted印證此為硬性要求。',grammarTip:'must表達義務或規定,常見於明確排除其他選項的情境。',businessContext:'Recruitment',learningGoal:'Distinguish degrees of obligation among modal verbs',masterySignals:['Connects the modal choice to surrounding context clues','Recognizes must fits when alternatives are explicitly ruled out','Avoids possibility modals when a rule is stated']},
+  {id:'g26',difficulty:2,category:'grammar',question:"Candidates ____ want to research the company culture before the interview.",options:["should","must","can","will"],correctIndex:0,explanation:'should表示建議,語氣比must溫和。',grammarTip:'should用來表達建議或忠告,不像must具強制性。',businessContext:'Recruitment',learningGoal:'Distinguish recommendation from obligation using modal verbs',masterySignals:['Distinguishes should (recommendation) from must (obligation)','Recognizes advice-giving contexts favor should','Avoids treating suggestions as strict requirements']},
 ];
 const FALLBACK_PART6_GROUPS=[
   {
     passage:"To all Pak Designs project leaders:\nIn the coming weeks, we will be organizing several training sessions for (131) employees. With support from senior leaders, less experienced staff can quickly (132) a deeper understanding of our design process. (133)\nThank you for your support.",
     q131:{options:["interested","interest","interests","interesting"],correctIndex:0,explanation:'修飾employees用過去分詞interested。'},
     q132:{options:["develop","raise","open","complete"],correctIndex:0,explanation:'develop understanding為固定搭配。'},
-    q133:{options:["We are urging every leader to attend one of the sessions.","The office will be closed next week.","Our sales increased last quarter.","Please submit your travel expenses by Friday."],correctIndex:0,explanation:'銜接前文,呼籲主管參加訓練課程。'}
+    q133:{options:["We are urging every leader to attend one of the sessions.","The office will be closed next week.","Our sales increased last quarter.","Please submit your travel expenses by Friday."],correctIndex:0,explanation:'銜接前文,呼籲主管參加訓練課程。'},
+    businessContext:'HR',learningGoal:'Track pronoun and connector references across a short business text',
+    masterySignals:['Identifies which noun each blank logically connects to','Reads the full passage before choosing sentence-insertion answers','Distinguishes word-form blanks from logic-flow blanks']
   },
   {
     passage:"Dear Valued Customer,\nThank you for your (131) purchase. Your order will be shipped within two business days. If you have any questions, please do not hesitate to (132) our support team. (133)\nBest regards, Customer Service",
     q131:{options:["recent","recently","recentness","recents"],correctIndex:0,explanation:'形容詞修飾purchase。'},
     q132:{options:["contact","attend","expect","reduce"],correctIndex:0,explanation:'contact our support team為固定搭配。'},
-    q133:{options:["We appreciate your continued business with us.","The store will open at 9 AM.","Prices will increase next month.","Please arrive early for the meeting."],correctIndex:0,explanation:'銜接前文,感謝顧客支持。'}
+    q133:{options:["We appreciate your continued business with us.","The store will open at 9 AM.","Prices will increase next month.","Please arrive early for the meeting."],correctIndex:0,explanation:'銜接前文,感謝顧客支持。'},
+    businessContext:'Customer Service',learningGoal:'Track pronoun and connector references across a short business text',
+    masterySignals:['Identifies which noun each blank logically connects to','Reads the full passage before choosing sentence-insertion answers','Distinguishes word-form blanks from logic-flow blanks']
   }
 ];
 const FALLBACK_CONVERSATIONS=[
@@ -1065,7 +1094,9 @@ const FALLBACK_CONVERSATIONS=[
       {question:"Why is the man calling?",options:["To cancel an order","To ask about a late order","To request a refund","To change his address"],correctIndex:1,explanation:'男子詢問未送達的訂單。'},
       {question:"What does the woman offer to do?",options:["Check the tracking number","Cancel the order","Give a discount","Send a new catalog"],correctIndex:0,explanation:'女子提議查詢追蹤編號。'},
       {question:"What does the man provide?",options:["A phone number","An order number","A discount code","An email address"],correctIndex:1,explanation:'男子提供訂單編號。'}
-    ]
+    ],
+    businessContext:'Customer Service',learningGoal:'Track speaker intent and follow-up actions across a full exchange',
+    masterySignals:['Identifies the caller\'s purpose within the first line','Follows who offers to do what across turns','Retains specific details like reference numbers']
   },
   {
     audioScript:"W: Could you help me set up the projector for tomorrow's presentation?\nM: Sure, I'll bring it to the conference room this afternoon.\nW: Great, the meeting starts at nine, so please test it beforehand.",
@@ -1073,7 +1104,9 @@ const FALLBACK_CONVERSATIONS=[
       {question:"What does the woman need help with?",options:["Printing documents","Setting up a projector","Booking a room","Ordering lunch"],correctIndex:1,explanation:'女子請男子協助架設投影機。'},
       {question:"When will the man bring the projector?",options:["This morning","This afternoon","Tomorrow evening","Next week"],correctIndex:1,explanation:'男子提到今天下午會帶過去。'},
       {question:"What does the woman ask the man to do?",options:["Cancel the meeting","Test the projector beforehand","Change the meeting time","Invite more people"],correctIndex:1,explanation:'女子提醒要事先測試。'}
-    ]
+    ],
+    businessContext:'Meeting',learningGoal:'Track speaker intent and follow-up actions across a full exchange',
+    masterySignals:['Identifies the request in the opening line','Tracks time expressions across the conversation','Distinguishes the main task from secondary reminders']
   }
 ];
 const FALLBACK_TALKS=[
@@ -1083,7 +1116,9 @@ const FALLBACK_TALKS=[
       {question:"Where is this announcement being made?",options:["At a restaurant","At a store","At an airport","At a hotel"],correctIndex:1,explanation:'情境為商店廣播。'},
       {question:"What will happen in fifteen minutes?",options:["A sale will begin","The store will close","A delivery will arrive","A meeting will start"],correctIndex:1,explanation:'廣播提到即將關門。'},
       {question:"Who receives a discount today?",options:["New customers","Loyalty members","Store employees","Online shoppers"],correctIndex:1,explanation:'忠實會員享有折扣。'}
-    ]
+    ],
+    businessContext:'Shopping',learningGoal:'Identify main idea and details in public announcements',
+    masterySignals:['Identifies the setting from context clues in the opening line','Extracts specific details like time and conditions','Distinguishes the main announcement from added details']
   },
   {
     audioScript:"Welcome to today's training session. Before we begin, please make sure your name badge is visible. We'll start with an overview of our new software, followed by a short group activity.",
@@ -1091,7 +1126,9 @@ const FALLBACK_TALKS=[
       {question:"What is the purpose of this talk?",options:["To welcome new customers","To introduce a training session","To announce a sale","To close the office"],correctIndex:1,explanation:'開場介紹訓練課程。'},
       {question:"What should listeners do before the session starts?",options:["Turn off their phones","Make their name badge visible","Sign a document","Find a seat"],correctIndex:1,explanation:'提醒配戴名牌。'},
       {question:"What will happen after the overview?",options:["A group activity","A coffee break","A written test","A guest speech"],correctIndex:0,explanation:'簡介後接著小組活動。'}
-    ]
+    ],
+    businessContext:'Presentation',learningGoal:'Identify main idea and sequence of events in a talk',
+    masterySignals:['Identifies the overall purpose from the opening sentence','Tracks the order of events described in a talk','Distinguishes instructions from the main agenda']
   }
 ];
 const FALLBACK_READING_GROUPS=[
@@ -1100,21 +1137,49 @@ const FALLBACK_READING_GROUPS=[
     questions:[
       {question:"What is suggested about the car?",options:["It was recently repaired.","It has had more than one owner.","It is very fuel efficient.","It has been on sale for six months."],correctIndex:0,explanation:'文中提到近期更換零件。'},
       {question:"Why does the owner want to sell the car?",options:["It is too expensive to maintain.","The owner is moving overseas.","The owner bought a new car.","The heater is broken."],correctIndex:1,explanation:'車主即將出國,所以要賣車。'}
-    ]
+    ],
+    businessContext:'Shopping',learningGoal:'Locate specific details and inferred facts in classified ads',
+    masterySignals:['Distinguishes stated facts from inferred facts','Locates answers by scanning rather than re-reading everything','Recognizes paraphrased options that restate the passage']
   },
   {
     passage:"Notice to All Tenants: The building's water supply will be temporarily shut off this Saturday from 9 AM to 1 PM for scheduled pipe maintenance. We recommend storing water in advance. We apologize for any inconvenience and appreciate your understanding.",
     questions:[
       {question:"Why is the water being shut off?",options:["For pipe maintenance","Due to a leak","For a building inspection","Because of a storm"],correctIndex:0,explanation:'公告提到是管線維修。'},
       {question:"What are tenants advised to do?",options:["Leave the building","Store water in advance","Contact the manager","Pay an extra fee"],correctIndex:1,explanation:'建議住戶提前儲水。'}
-    ]
+    ],
+    businessContext:'Real Estate',learningGoal:'Locate specific details and recommended actions in notices',
+    masterySignals:['Identifies the reason stated for an announcement','Distinguishes the main notice from suggested actions','Answers without needing to reread the full notice']
   }
 ];
 const FALLBACK_PHOTO=[
-  {id:'p1',difficulty:1,sceneTag:'辦公室裡，一位男士正坐在電腦前打字',options:["A man is typing on a keyboard.","A man is watering plants.","A man is repairing a printer.","A man is sweeping the floor."],correctIndex:0,explanation:'描述句明確指出動作是打字,其餘三句的動作都對不上。'},
-  {id:'p2',difficulty:2,sceneTag:'機場報到櫃檯前，一群乘客正排隊等候辦理登機手續',options:["Passengers are boarding a bus.","Passengers are waiting in line at the counter.","Passengers are eating at a restaurant.","Passengers are sleeping in a lounge."],correctIndex:1,explanation:'場景明確是「排隊等候辦理登機」,其餘三句的地點或動作都對不上,包含休息區睡覺這種被動狀態也不符合「排隊」這個具體動作。'},
-  {id:'p3',difficulty:2,sceneTag:'會議室裡，一位女士正站在螢幕前向團隊做簡報',options:["Colleagues are shaking hands.","A woman is presenting to a group.","Workers are loading boxes onto a truck.","A chef is preparing a meal."],correctIndex:1,explanation:'描述句明確指出是單一女性在簡報,其餘三句的人物或動作都對不上。'}
+  {id:'p1',difficulty:1,sceneTag:'辦公室裡，一位男士正坐在電腦前打字',options:["A man is typing on a keyboard.","A man is watering plants.","A man is repairing a printer.","A man is sweeping the floor."],correctIndex:0,explanation:'描述句明確指出動作是打字,其餘三句的動作都對不上。',businessContext:'Office',learningGoal:'Match precise action verbs to a described scene',masterySignals:['Identifies the specific action rather than a general scene','Rejects options with plausible but incorrect verbs','Answers confidently without overanalyzing background details']},
+  {id:'p2',difficulty:2,sceneTag:'機場報到櫃檯前，一群乘客正排隊等候辦理登機手續',options:["Passengers are boarding a bus.","Passengers are waiting in line at the counter.","Passengers are eating at a restaurant.","Passengers are sleeping in a lounge."],correctIndex:1,explanation:'場景明確是「排隊等候辦理登機」,其餘三句的地點或動作都對不上,包含休息區睡覺這種被動狀態也不符合「排隊」這個具體動作。',businessContext:'Airport',learningGoal:'Match precise action verbs to a described scene',masterySignals:['Distinguishes active queuing from passive waiting/resting','Confirms both the action and location match the option','Avoids selecting a generically "airport-related" but incorrect option']},
+  {id:'p3',difficulty:2,sceneTag:'會議室裡，一位女士正站在螢幕前向團隊做簡報',options:["Colleagues are shaking hands.","A woman is presenting to a group.","Workers are loading boxes onto a truck.","A chef is preparing a meal."],correctIndex:1,explanation:'描述句明確指出是單一女性在簡報,其餘三句的人物或動作都對不上。',businessContext:'Meeting',learningGoal:'Match subject and action together in a described scene',masterySignals:['Confirms both the subject (who) and action (what) match together','Avoids options that get the action right but the subject wrong','Answers based on the full sentence, not a single keyword']},
 ];
+/* ========================= Master Question Library ========================= */
+/* Chapter 04：Hello 不是萬題題庫，而是一小批「精心設計、審過的」基礎題目，
+   每題都完整符合 Chapter 05 的 Question Specification（question / choices /
+   correctIndex / explanation / vocabulary / grammar / metadata，包含
+   businessContext、learningGoal、masterySignals）。
+   這裡先把目前所有 Part 的題目統一收斂成一份有清楚分類的 Library，
+   取代原本分散、互不相通的各種 FALLBACK_* 陣列命名方式——
+   實際資料還是那些陣列（沒有重複複製一份，維護只需要改一個地方），
+   只是這裡多包一層「依 TOEIC Part 分類」的正式入口，
+   之後 Question Template／AI Variation Engine 要抽題當範本時，就從這裡取用。
+   目前規模是初期的種子集（每個 Part 幾題），離 Chapter 04 建議的 300–500 題還有距離，
+   之後會持續擴充，但資料格式與取用方式已經是最終架構，不用再改一次。 */
+const MASTER_QUESTION_LIBRARY={
+  part1:FALLBACK_PHOTO,
+  part2:FALLBACK_LISTENING,
+  part3:FALLBACK_CONVERSATIONS,
+  part4:FALLBACK_TALKS,
+  part5:[...FALLBACK_QUESTIONS,...FALLBACK_GRAMMAR],
+  part6:FALLBACK_PART6_GROUPS,
+  part7:FALLBACK_READING_GROUPS,
+};
+function getLibrarySize(){
+  return Object.values(MASTER_QUESTION_LIBRARY).reduce((sum,arr)=>sum+arr.length,0);
+}
 const FALLBACK_SPEAKING=[
   {id:'s1',mode:'readAloud',text:'Please review the attached document before our meeting.',difficulty:2},
   {id:'s2',mode:'shortAnswer',text:'What do you usually do after work?',difficulty:1},
@@ -1305,6 +1370,7 @@ function part6GroupToItems(group){
   const blanks=[['131',group.q131],['132',group.q132],['133',group.q133]];
   return blanks.map(([num,b],i)=>makeQuestionObject(shuffleOptions({
     id:uid(),difficulty:difficultyByPosition(i,blanks.length),category:'part6',passage:group.passage,
+    businessContext:group.businessContext||null,learningGoal:group.learningGoal||null,masterySignals:group.masterySignals||null,
     question: num==='133' ? `第 (${num}) 格，請選出最適合銜接前後文的句子：` : `第 (${num}) 格應填入：`,
     options:b.options,correctIndex:b.correctIndex,explanation:b.explanation||''
   }),{partKey:'part6',questionType:num==='133'?'Sentence Insertion':'Single Choice'}));
@@ -1324,6 +1390,7 @@ function groupToListeningItems(group,category){
   const qs=group.questions.slice(0,3);
   return qs.map((q,i)=>makeQuestionObject(shuffleOptions({
     id:uid(),difficulty:difficultyByPosition(i,qs.length),category,audioScript:group.audioScript,
+    businessContext:group.businessContext||null,learningGoal:group.learningGoal||null,masterySignals:group.masterySignals||null,
     question:q.question,options:q.options,correctIndex:q.correctIndex,explanation:q.explanation||''
   }),{partKey}));
 }
@@ -1357,6 +1424,7 @@ async function generateReadingGroup(profile,passageCount){
 function groupToReadingItems(group){
   return group.questions.map((q,i)=>makeQuestionObject(shuffleOptions({
     id:uid(),difficulty:difficultyByPosition(i,group.questions.length),category:'reading',passages:group.passages,
+    businessContext:group.businessContext||null,learningGoal:group.learningGoal||null,masterySignals:group.masterySignals||null,
     question:q.question,options:q.options,correctIndex:q.correctIndex,explanation:q.explanation||''
   }),{partKey:'part7'}));
 }
